@@ -27,16 +27,28 @@ fn multiline_hl(buf: &mut Buffer, namespace: u32, hl: &str, start: RowCol, end: 
 	Ok(())
 }
 
-fn byte2rowcol(buf: &Buffer, index: usize) -> RowCol {
-	buf.get_offset(index)
-	
-	oxi::api::
+fn byte2rowcol(buf: &Buffer, index: usize) -> oxi::Result<RowCol> {
+	// TODO lmao this impl
+	let mut row = 0;
+	loop {
+		let offset = buf.get_offset(row+1)?;
+		if offset > index { // found line
+			let base = buf.get_offset(row)?;
+			return Ok(RowCol { row: row as i32, col: (index - base) as i32 });
+		}
+		row += 1;
+	}
 }
 
 fn multiline_set_text(buf: &mut Buffer, change: CodempTextChange) -> oxi::Result<()> {
-	for i in change.span
-
-
+	let start = byte2rowcol(buf, change.span.start)?;
+	let end = byte2rowcol(buf, change.span.end)?;
+	buf.set_text(
+		start.row as usize ..= end.row as usize,
+		start.col as usize,
+		end.col as usize,
+		change.content.split('\n')
+	)?;
 	Ok(())
 }
 
@@ -56,7 +68,7 @@ fn buffer_content(buf: &Buffer) -> oxi::Result<String> {
 		out.push_str(&line.to_string_lossy());
 		out.push('\n');
 	}
-	Ok(out)
+	Ok(out.trim().to_string())
 }
 
 impl CursorStorage {
@@ -79,11 +91,11 @@ impl CursorStorage {
 }
 
 #[oxi::module]
-fn api() -> oxi::Result<()> {
+fn codemp_nvim() -> oxi::Result<()> {
 	oxi::api::create_user_command(
 		"Connect",
 		|args: CommandArgs| {
-			let addr = args.args.unwrap_or("http://alemi.dev:50051".into());
+			let addr = args.args.unwrap_or("http://127.0.0.1:50051".into());
 
 			RUNTIME.block_on(CODEMP_INSTANCE.connect(&addr))
 				.map_err(|e| nvim_oxi::api::Error::Other(format!("xx could not connect: {}", e)))?;
@@ -100,7 +112,7 @@ fn api() -> oxi::Result<()> {
 	oxi::api::create_user_command(
 		"Join",
 		|args: CommandArgs| {
-			let workspace = args.args.expect("one arg required but not provided");
+			let workspace = args.args.unwrap_or("default".into());
 
 			let controller = RUNTIME.block_on(CODEMP_INSTANCE.join(&workspace))
 				.map_err(|e| nvim_oxi::api::Error::Other(format!("xx could not join: {}", e)))?;
@@ -115,7 +127,7 @@ fn api() -> oxi::Result<()> {
 				Ok::<_, oxi::Error>(())
 			}).map_err(|e| oxi::api::Error::Other(format!("xx could not create handle: {}", e)))?;
 
-			controller.clone().callback(move |x| {
+			controller.clone().callback(&RUNTIME, move |x| {
 				tx.send(x).unwrap_or_warn("could not enqueue callback");
 				handle.send().unwrap_or_warn("could not wake async handle");
 			});
@@ -139,7 +151,7 @@ fn api() -> oxi::Result<()> {
 		},
 		&CreateCommandOpts::builder()
 			.desc("join a codemp workspace and start processing cursors")
-			.nargs(CommandNArgs::One)
+			.nargs(CommandNArgs::ZeroOrOne) // TODO wtf if I put "One" I cannot require codemp_nvim ('invalid nargs')
 			.build(),
 	)?;
 
@@ -152,17 +164,18 @@ fn api() -> oxi::Result<()> {
 				.map_err(|e| nvim_oxi::api::Error::Other(format!("xx could not attach: {}", e)))?;
 
 			let buf = oxi::api::get_current_buf();
+			let mut buf_m = buf.clone();
 			let (tx, mut rx) = mpsc::unbounded_channel::<CodempTextChange>();
 			// let mut container = CursorStorage::default();
 
 			let handle = AsyncHandle::new(move || {
-				while let Ok(x) = rx.try_recv() { // TODO do this inside oxi::schedule() to not block vim
-					buf.set_text(line_range, start_col, end_col, replacement)
+				while let Ok(change) = rx.try_recv() { // TODO do this inside oxi::schedule() to not block vim
+					multiline_set_text(&mut buf_m, change)?;
 				}
 				Ok::<_, oxi::Error>(())
 			}).map_err(|e| oxi::api::Error::Other(format!("xx could not create handle: {}", e)))?;
 
-			controller.clone().callback(move |x| {
+			controller.clone().callback(&RUNTIME, move |x| {
 				tx.send(x).unwrap_or_warn("could not enqueue callback");
 				handle.send().unwrap_or_warn("could not wake async handle");
 			});
@@ -190,8 +203,25 @@ fn api() -> oxi::Result<()> {
 			Ok(())
 		},
 		&CreateCommandOpts::builder()
-			.desc("join a codemp workspace and start processing cursors")
-			.nargs(CommandNArgs::One)
+			.desc("attach to buffer, sending and receiving changes")
+			.nargs(CommandNArgs::ZeroOrOne) // TODO wtf if I put "One" I cannot require codemp_nvim ('invalid nargs')
+			.build(),
+	)?;
+
+	oxi::api::create_user_command(
+		"Create",
+		|args: CommandArgs| {
+			let path = args.args.expect("one arg required but not provided");
+
+			RUNTIME.block_on(CODEMP_INSTANCE.create(&path, None))
+				.map_err(|e| nvim_oxi::api::Error::Other(format!("xx could not attach: {}", e)))?;
+
+			oxi::print!("++ created buffer '{}'", path);
+			Ok(())
+		},
+		&CreateCommandOpts::builder()
+			.desc("create a new buffer")
+			.nargs(CommandNArgs::ZeroOrOne) // TODO wtf if I put "One" I cannot require codemp_nvim ('invalid nargs')
 			.build(),
 	)?;
 
