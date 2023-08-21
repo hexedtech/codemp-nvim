@@ -16,11 +16,11 @@ impl From::<LuaCodempError> for LuaError {
 fn cursor_to_table(lua: &Lua, cur: CodempCursorEvent) -> LuaResult<LuaTable> {
 	let pos = cur.position.unwrap_or_default();
 	let start = lua.create_table()?;
-	start.set(0, pos.start().row)?;
-	start.set(1, pos.start().col)?;
+	start.set(1, pos.start().row)?;
+	start.set(2, pos.start().col)?;
 	let end = lua.create_table()?;
-	end.set(0, pos.end().row)?;
-	end.set(1, pos.end().col)?;
+	end.set(1, pos.end().row)?;
+	end.set(2, pos.end().col)?;
 	let out = lua.create_table()?;
 	out.set("user", cur.user)?;
 	out.set("buffer", pos.buffer)?;
@@ -51,7 +51,13 @@ fn connect(_: &Lua, (host,): (Option<String>,)) -> LuaResult<()> {
 	Ok(())
 }
 
-
+fn get_cursor(_: &Lua, _args: ()) -> LuaResult<LuaCursorController> {
+	Ok(
+		CODEMP_INSTANCE.get_cursor()
+			.map_err(LuaCodempError::from)?
+			.into()
+	)
+}
 
 /// join a remote workspace and start processing cursor events
 fn join(_: &Lua, (session,): (String,)) -> LuaResult<LuaCursorController> {
@@ -60,17 +66,24 @@ fn join(_: &Lua, (session,): (String,)) -> LuaResult<LuaCursorController> {
 	Ok(LuaCursorController(controller))
 }
 
-#[derive(derive_more::From)]
+#[derive(Debug, derive_more::From)]
 struct LuaCursorController(Arc<CodempCursorController>);
 impl LuaUserData for LuaCursorController {
 	fn add_methods<'lua, M: LuaUserDataMethods<'lua, Self>>(methods: &mut M) {
-		methods.add_method_mut("send", |_, this, (usr, sr, sc, er, ec):(String, i32, i32, i32, i32)| {
+		methods.add_meta_method(LuaMetaMethod::ToString, |_, this, ()| Ok(format!("{:?}", this)));
+		methods.add_method("send", |_, this, (usr, sr, sc, er, ec):(String, i32, i32, i32, i32)| {
 			Ok(this.0.send(make_cursor(usr, sr, sc, er, ec)).map_err(LuaCodempError::from)?)
 		});
-		methods.add_method_mut("recv", |lua, this, ()| {
-			let event = this.0.blocking_recv(CODEMP_INSTANCE.rt())
+		methods.add_method("recv", |lua, this, ()| {
+			match this.0.try_recv() .map_err(LuaCodempError::from)? {
+				Some(x) => Ok(Some(cursor_to_table(lua, x)?)),
+				None => Ok(None),
+			}
+		});
+		methods.add_method("poll", |_, this, ()| {
+			CODEMP_INSTANCE.rt().block_on(this.0.poll())
 					.map_err(LuaCodempError::from)?;
-			cursor_to_table(lua, event)
+			Ok(())
 		});
 	}
 }
@@ -132,26 +145,27 @@ fn attach(_: &Lua, (path,): (String,)) -> LuaResult<LuaBufferController> {
 	Ok(LuaBufferController(controller))
 }
 
-#[derive(derive_more::From)]
+#[derive(Debug, derive_more::From)]
 struct LuaBufferController(Arc<CodempBufferController>);
 impl LuaUserData for LuaBufferController {
 	fn add_methods<'lua, M: LuaUserDataMethods<'lua, Self>>(methods: &mut M) {
-		methods.add_method_mut("delta", |_, this, (start, txt, end):(usize, String, usize)| {
+		methods.add_meta_method(LuaMetaMethod::ToString, |_, this, ()| Ok(format!("{:?}", this)));
+		methods.add_method("delta", |_, this, (start, txt, end):(usize, String, usize)| {
 			match this.0.delta(start, &txt, end) {
 				Some(op) => Ok(this.0.send(op).map_err(LuaCodempError::from)?),
 				None => Ok(()),
 			}
 		});
-		methods.add_method_mut("replace", |_, this, txt:String| {
+		methods.add_method("replace", |_, this, txt:String| {
 			match this.0.replace(&txt) {
 				Some(op) => Ok(this.0.send(op).map_err(LuaCodempError::from)?),
 				None => Ok(()),
 			}
 		});
-		methods.add_method_mut("insert", |_, this, (txt, pos):(String, u64)| {
+		methods.add_method("insert", |_, this, (txt, pos):(String, u64)| {
 			Ok(this.0.send(this.0.insert(&txt, pos)).map_err(LuaCodempError::from)?)
 		});
-		methods.add_method_mut("recv", |_, this, ()| {
+		methods.add_method("recv", |_, this, ()| {
 			let change = this.0.blocking_recv(CODEMP_INSTANCE.rt())
 				.map_err(LuaCodempError::from)?;
 			Ok(LuaTextChange(change))
@@ -163,13 +177,17 @@ impl LuaUserData for LuaBufferController {
 	}
 }
 
-#[derive(derive_more::From)]
+#[derive(Debug, derive_more::From)]
 struct LuaTextChange(CodempTextChange);
 impl LuaUserData for LuaTextChange {
 	fn add_fields<'lua, F: LuaUserDataFields<'lua, Self>>(fields: &mut F) {
 		fields.add_field_method_get("content", |_, this| Ok(this.0.content.clone()));
 		fields.add_field_method_get("start",   |_, this| Ok(this.0.span.start));
 		fields.add_field_method_get("finish",  |_, this| Ok(this.0.span.end));
+	}
+
+	fn add_methods<'lua, M: LuaUserDataMethods<'lua, Self>>(methods: &mut M) {
+		methods.add_meta_method(LuaMetaMethod::ToString, |_, this, ()| Ok(format!("{:?}", this)));
 	}
 }
 
@@ -182,5 +200,6 @@ fn libcodemp_nvim(lua: &Lua) -> LuaResult<LuaTable> {
 	exports.set("join",    lua.create_function(join)?)?;
 	exports.set("create",  lua.create_function(create)?)?;
 	exports.set("attach",  lua.create_function(attach)?)?;
+	exports.set("get_cursor", lua.create_function(get_cursor)?)?;
 	Ok(exports)
 }
