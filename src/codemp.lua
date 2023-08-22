@@ -42,6 +42,19 @@ local function cursor_position()
 	end
 end
 
+local function buffer_get_content(buf)
+	if buf == nil then
+		buf = vim.api.nvim_get_current_buf()
+	end
+	local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+	return table.concat(lines, '\n')
+end
+
+local function buffer_set_content(buf, content)
+	local lines = vim.fn.split(content, "\n")
+	vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+end
+
 local function multiline_highlight(buf, ns, group, start, fini)
 	for i=start[1],fini[1] do
 		if i == start[1] and i == fini[1] then
@@ -69,11 +82,12 @@ vim.api.nvim_create_user_command(
 	"Join",
 	function (args)
 		local controller = codemp.join(args.args)
+		local buffer = vim.api.nvim_get_current_buf()
+		local ns = vim.api.nvim_create_namespace("codemp-cursors")
 
 		-- hook serverbound callbacks
-		local group = vim.api.nvim_create_augroup("codemp-workspace", { clear = true })
 		vim.api.nvim_create_autocmd({"CursorMoved", "CursorMovedI"}, {
-			group = group,
+			group = vim.api.nvim_create_augroup("codemp-workspace-" .. args.args, { clear = true }),
 			callback = function (_)
 				local cur = cursor_position()
 				controller:send("", cur[1][1], cur[1][2], cur[2][1], cur[2][2])
@@ -81,11 +95,9 @@ vim.api.nvim_create_user_command(
 		})
 
 		-- hook clientbound callbacks
-		local ns = vim.api.nvim_create_namespace("codemp-cursors")
-		local buffer = vim.api.nvim_get_current_buf()
 		register_async_waker(nil, function()
 			while true do
-				local event = controller:recv()
+				local event = controller:try_recv()
 				if event == nil then break end
 				vim.schedule(function()
 					vim.api.nvim_buf_clear_namespace(buffer, ns, 0, -1)
@@ -100,12 +112,53 @@ vim.api.nvim_create_user_command(
 )
 
 vim.api.nvim_create_user_command(
+	"Create",
+	function (args)
+		local content = nil
+		if args.bang then
+			local buf = vim.api.nvim_get_current_buf()
+			content = buffer_get_content(buf)
+		end
+		codemp.create(args.args, content)
+
+		print(" ++ created buffer " .. args.args)
+	end,
+	{ nargs = 1, bang = true }
+)
+
+vim.api.nvim_create_user_command(
 	"Attach",
 	function (args)
-		codemp.connect(#args.args > 0 and args.args or nil)
-		print(" ++ connected")
+		local controller = codemp.attach(args.args)
+		local buffer = vim.api.nvim_get_current_buf()
+
+		buffer_set_content(buffer, controller.content)
+
+		-- hook serverbound callbacks
+		vim.api.nvim_create_autocmd({"CursorMoved", "CursorMovedI"}, {
+			group = vim.api.nvim_create_augroup("codemp-buffer-" .. args.args, { clear = true }),
+			buffer = buffer,
+			callback = function (_)
+				controller:replace(buffer_get_content(buffer))
+			end
+		})
+
+		-- hook clientbound callbacks
+		register_async_waker(args.args, function()
+			vim.schedule(function()
+				buffer_set_content(buffer, controller.content)
+			end)
+		end)
+
+		print(" ++ joined workspace " .. args.args)
 	end,
 	{ nargs = 1 }
 )
 
-return codemp
+return {
+	lib = codemp,
+	utils = {
+		buffer = buffer_get_content,
+		cursor  = cursor_position,
+	}
+}
