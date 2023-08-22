@@ -59,6 +59,14 @@ fn get_cursor(_: &Lua, _args: ()) -> LuaResult<LuaCursorController> {
 	)
 }
 
+fn get_buffer(_: &Lua, (path,): (String,)) -> LuaResult<LuaBufferController> {
+	Ok(
+		CODEMP_INSTANCE.get_buffer(&path)
+			.map_err(LuaCodempError::from)?
+			.into()
+	)
+}
+
 /// join a remote workspace and start processing cursor events
 fn join(_: &Lua, (session,): (String,)) -> LuaResult<LuaCursorController> {
 	let controller = CODEMP_INSTANCE.join(&session)
@@ -74,7 +82,7 @@ impl LuaUserData for LuaCursorController {
 		methods.add_method("send", |_, this, (usr, sr, sc, er, ec):(String, i32, i32, i32, i32)| {
 			Ok(this.0.send(make_cursor(usr, sr, sc, er, ec)).map_err(LuaCodempError::from)?)
 		});
-		methods.add_method("recv", |lua, this, ()| {
+		methods.add_method("try_recv", |lua, this, ()| {
 			match this.0.try_recv() .map_err(LuaCodempError::from)? {
 				Some(x) => Ok(Some(cursor_to_table(lua, x)?)),
 				None => Ok(None),
@@ -165,10 +173,16 @@ impl LuaUserData for LuaBufferController {
 		methods.add_method("insert", |_, this, (txt, pos):(String, u64)| {
 			Ok(this.0.send(this.0.insert(&txt, pos)).map_err(LuaCodempError::from)?)
 		});
-		methods.add_method("recv", |_, this, ()| {
-			let change = this.0.blocking_recv(CODEMP_INSTANCE.rt())
-				.map_err(LuaCodempError::from)?;
-			Ok(LuaTextChange(change))
+		methods.add_method("try_recv", |_, this, ()| {
+			match this.0.try_recv() .map_err(LuaCodempError::from)? {
+				Some(x) => Ok(Some(LuaTextChange(x))),
+				None => Ok(None),
+			}
+		});
+		methods.add_method("poll", |_, this, ()| {
+			CODEMP_INSTANCE.rt().block_on(this.0.poll())
+					.map_err(LuaCodempError::from)?;
+			Ok(())
 		});
 	}
 
@@ -201,5 +215,6 @@ fn libcodemp_nvim(lua: &Lua) -> LuaResult<LuaTable> {
 	exports.set("create",  lua.create_function(create)?)?;
 	exports.set("attach",  lua.create_function(attach)?)?;
 	exports.set("get_cursor", lua.create_function(get_cursor)?)?;
+	exports.set("get_buffer", lua.create_function(get_buffer)?)?;
 	Ok(exports)
 }
