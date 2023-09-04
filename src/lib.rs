@@ -13,16 +13,6 @@ impl From::<LuaCodempError> for LuaError {
 	}
 }
 
-fn byte_to_rowcol(text: &str, index: usize) -> CodempRowCol {
-	let lines_before = text[..index].split('\n').count() - 1;
-	let chars_before = text[..index].split('\n').last().unwrap_or_default().len();
-
-	CodempRowCol {
-		row: lines_before as i32,
-		col: chars_before as i32,
-	}
-}
-
 fn cursor_to_table(lua: &Lua, cur: CodempCursorEvent) -> LuaResult<LuaTable> {
 	let pos = cur.position.unwrap_or_default();
 	let start = lua.create_table()?;
@@ -155,10 +145,6 @@ impl LuaUserData for LuaBufferController {
 					.map_err(LuaCodempError::from)?;
 			Ok(())
 		});
-
-		methods.add_method("byte2rowcol", |_, this, (byte,)| {
-			Ok(LuaRowCol(byte_to_rowcol(&this.0.content(), byte)))
-		});
 	}
 
 	fn add_fields<'lua, F: LuaUserDataFields<'lua, Self>>(fields: &mut F) {
@@ -171,8 +157,10 @@ struct LuaTextChange(CodempTextChange);
 impl LuaUserData for LuaTextChange {
 	fn add_fields<'lua, F: LuaUserDataFields<'lua, Self>>(fields: &mut F) {
 		fields.add_field_method_get("content", |_, this| Ok(this.0.content.clone()));
-		fields.add_field_method_get("start",   |_, this| Ok(this.0.span.start));
-		fields.add_field_method_get("finish",  |_, this| Ok(this.0.span.end));
+		// fields.add_field_method_get("start",   |_, this| Ok(LuaRowCol(this.0.start())));
+		// fields.add_field_method_get("finish",  |_, this| Ok(LuaRowCol(this.0.end())));
+		// fields.add_field_method_get("before",  |_, this| Ok((*this.0.before).clone()));
+		// fields.add_field_method_get("after",   |_, this| Ok((*this.0.after).clone()));
 	}
 
 	fn add_methods<'lua, M: LuaUserDataMethods<'lua, Self>>(methods: &mut M) {
@@ -200,17 +188,5 @@ fn libcodemp_nvim(lua: &Lua) -> LuaResult<LuaTable> {
 	exports.set("attach",  lua.create_function(attach)?)?;
 	exports.set("get_cursor", lua.create_function(get_cursor)?)?;
 	exports.set("get_buffer", lua.create_function(get_buffer)?)?;
-	exports.set("byte2rowcol",lua.create_function(byte2rowcol)?)?;
 	Ok(exports)
-}
-
-
-// TODO this is wasteful because, just to calculate two indices, we clone a 
-//  potentially big string. this is necessary because vim doesn't provide an 
-//  api equivalent of byte2line (we need to specify arbitrary buffers).
-fn byte2rowcol(_: &Lua, (txt, index): (String, usize)) -> LuaResult<(usize, usize)> {
-	let lines = txt[..index].split('\n');
-	let col = lines.clone().last().unwrap_or("").len();
-	let row = lines.count() - 1;
-	Ok((row, col))
 }

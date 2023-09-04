@@ -173,33 +173,36 @@ vim.api.nvim_create_user_command(
 		vim.api.nvim_buf_attach(buffer, false, {
 			on_lines = function (_, buf, tick, firstline, lastline, new_lastline, old_byte_size)
 				if tick == codemp_changed_tick then return end
-				print(string.format(">[%s] %s:%s|%s (%s)", tick, firstline, lastline, new_lastline, old_byte_size))
-				local start_index = firstline == 0 and 0 or vim.fn.line2byte(firstline + 1) - 1
-				local text = table.concat(
-					vim.api.nvim_buf_get_lines(buf, firstline, new_lastline, true),
-					"\n"
-				)
-				if lastline ~= new_lastline then
-					text = text .. "\n"
-				end
-				print(string.format(">delta [%d,%s,%d]", start_index, text, start_index + old_byte_size - 1))
-				controller:delta(start_index, text, start_index + old_byte_size - 1)
+				-- print(string.format(">[%s] %s:%s|%s (%s)", tick, firstline, lastline, new_lastline, old_byte_size))
+				-- local start_index = firstline == 0 and 0 or vim.fn.line2byte(firstline + 1) - 1
+				-- local text = table.concat(
+				-- 	vim.api.nvim_buf_get_lines(buf, firstline, new_lastline, true),
+				-- 	"\n"
+				-- )
+				-- -- if lastline ~= new_lastline then
+				-- -- 	text = text .. "\n"
+				-- -- end
+				-- print(string.format(">delta [%d,%s,%d]", start_index, text, start_index + old_byte_size - 1))
+				-- controller:delta(start_index, text, start_index + old_byte_size - 1)
+				local content = buffer_get_content(buf)
+				controller:replace(content)
 			end
 		})
 
 		-- hook clientbound callbacks
 		register_controller_handler(args.args, controller, function(event)
 			codemp_changed_tick = vim.api.nvim_buf_get_changedtick(buffer) + 1
-			local start = controller:byte2rowcol(event.start)
-			local finish = controller:byte2rowcol(event.finish)
-			print(string.format(
-				"buf_set_text(%s,%s, %s,%s, '%s')",
-				start.row, start.col, finish.row, finish.col, vim.inspect(split_without_trim(event.content, "\n"))
-			))
-			vim.api.nvim_buf_set_text(
-				buffer, start.row, start.col, finish.row, finish.col,
-				split_without_trim(event.content, "\n")
-			)
+			-- local start = event.start
+			-- local finish = event.finish
+			-- print(string.format(
+			-- 	"buf_set_text(%s,%s, %s,%s, '%s')",
+			-- 	start.row, start.col, finish.row, finish.col, vim.inspect(split_without_trim(event.content, "\n"))
+			-- ))
+			-- vim.api.nvim_buf_set_text(
+			-- 	buffer, start.row, start.col, finish.row, finish.col,
+			-- 	split_without_trim(event.content, "\n")
+			-- )
+			buffer_set_content(buffer, controller.content)
 		end)
 
 		print(" ++ joined workspace " .. args.args)
