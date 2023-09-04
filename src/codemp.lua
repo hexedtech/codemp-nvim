@@ -96,6 +96,7 @@ local function buffer_set_content(buf, content)
 end
 
 local function multiline_highlight(buf, ns, group, start, fini)
+	if start[2] == fini[2] then fini[2] = fini[2] + 1 end
 	for i=start[1],fini[1] do
 		if i == start[1] and i == fini[1] then
 			vim.api.nvim_buf_add_highlight(buf, ns, group, i, start[2], fini[2])
