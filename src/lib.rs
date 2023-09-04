@@ -13,6 +13,16 @@ impl From::<LuaCodempError> for LuaError {
 	}
 }
 
+fn byte_to_rowcol(text: &str, index: usize) -> CodempRowCol {
+	let lines_before = text[..index].split('\n').count() - 1;
+	let chars_before = text[..index].split('\n').last().unwrap_or_default().len();
+
+	CodempRowCol {
+		row: lines_before as i32,
+		col: chars_before as i32,
+	}
+}
+
 fn cursor_to_table(lua: &Lua, cur: CodempCursorEvent) -> LuaResult<LuaTable> {
 	let pos = cur.position.unwrap_or_default();
 	let start = lua.create_table()?;
@@ -96,45 +106,6 @@ impl LuaUserData for LuaCursorController {
 	}
 }
 
-// #[derive(derive_more::From)]
-// struct LuaCursorEvent(CodempCursorEvent);
-// impl LuaUserData for LuaCursorEvent {
-// 	fn add_fields<'lua, F: LuaUserDataFields<'lua, Self>>(fields: &mut F) {
-// 		fields.add_field_method_get("user", |_, this| Ok(this.0.user));
-// 		fields.add_field_method_set("user", |_, this, val| Ok(this.0.user = val));
-// 
-// 		fields.add_field_method_get("user", |_, this| Ok(this.0.user));
-// 		fields.add_field_method_set("user", |_, this, val| Ok(this.0.user = val));
-// 	}
-// }
-// 
-// #[derive(derive_more::From)]
-// struct LuaCursorPosition(CodempCursorPosition);
-// impl LuaUserData for LuaCursorPosition {
-// 	fn add_fields<'lua, F: LuaUserDataFields<'lua, Self>>(fields: &mut F) {
-// 		fields.add_field_method_get("buffer", |_, this| Ok(this.0.buffer));
-// 		fields.add_field_method_set("buffer", |_, this, val| Ok(this.0.buffer = val));
-// 
-// 		fields.add_field_method_get("start", |_, this| Ok(this.0.start.into()));
-// 		fields.add_field_method_set("start", |_, this, (val,):(LuaRowCol,)| Ok(this.0.start = Some(val.0)));
-// 
-// 		fields.add_field_method_get("end", |_, this| Ok(this.0.end.unwrap_or_default()));
-// 		fields.add_field_method_set("end", |_, this, val| Ok(this.0.end = Some(val)));
-// 	}
-// }
-// 
-// #[derive(derive_more::From)]
-// struct LuaRowCol(CodempRowCol);
-// impl LuaUserData for LuaRowCol {
-// 	fn add_fields<'lua, F: LuaUserDataFields<'lua, Self>>(fields: &mut F) {
-// 		fields.add_field_method_get("row", |_, this| Ok(this.0.col));
-// 		fields.add_field_method_set("row", |_, this, val| Ok(this.0.col = val));
-// 
-// 		fields.add_field_method_get("col", |_, this| Ok(this.0.col));
-// 		fields.add_field_method_set("col", |_, this, val| Ok(this.0.col = val));
-// 	}
-// }
-
 
 
 /// create a new buffer in current workspace
@@ -161,7 +132,7 @@ impl LuaUserData for LuaBufferController {
 		methods.add_method("delta", |_, this, (start, txt, end):(usize, String, usize)| {
 			match this.0.delta(start, &txt, end) {
 				Some(op) => Ok(this.0.send(op).map_err(LuaCodempError::from)?),
-				None => Ok(()),
+				None => Err(LuaError::RuntimeError("wtf".into())),
 			}
 		});
 		methods.add_method("replace", |_, this, txt:String| {
@@ -184,6 +155,10 @@ impl LuaUserData for LuaBufferController {
 					.map_err(LuaCodempError::from)?;
 			Ok(())
 		});
+
+		methods.add_method("byte2rowcol", |_, this, (byte,)| {
+			Ok(LuaRowCol(byte_to_rowcol(&this.0.content(), byte)))
+		});
 	}
 
 	fn add_fields<'lua, F: LuaUserDataFields<'lua, Self>>(fields: &mut F) {
@@ -205,6 +180,15 @@ impl LuaUserData for LuaTextChange {
 	}
 }
 
+#[derive(Debug, derive_more::From)]
+struct LuaRowCol(CodempRowCol);
+impl LuaUserData for LuaRowCol {
+	fn add_fields<'lua, F: LuaUserDataFields<'lua, Self>>(fields: &mut F) {
+		fields.add_field_method_get("row", |_, this| Ok(this.0.row));
+		fields.add_field_method_get("col", |_, this| Ok(this.0.col));
+	}
+}
+
 
 
 #[mlua::lua_module]
@@ -216,5 +200,17 @@ fn libcodemp_nvim(lua: &Lua) -> LuaResult<LuaTable> {
 	exports.set("attach",  lua.create_function(attach)?)?;
 	exports.set("get_cursor", lua.create_function(get_cursor)?)?;
 	exports.set("get_buffer", lua.create_function(get_buffer)?)?;
+	exports.set("byte2rowcol",lua.create_function(byte2rowcol)?)?;
 	Ok(exports)
+}
+
+
+// TODO this is wasteful because, just to calculate two indices, we clone a 
+//  potentially big string. this is necessary because vim doesn't provide an 
+//  api equivalent of byte2line (we need to specify arbitrary buffers).
+fn byte2rowcol(_: &Lua, (txt, index): (String, usize)) -> LuaResult<(usize, usize)> {
+	let lines = txt[..index].split('\n');
+	let col = lines.clone().last().unwrap_or("").len();
+	let row = lines.count() - 1;
+	Ok((row, col))
 }
