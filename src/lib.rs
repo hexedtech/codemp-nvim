@@ -13,22 +13,7 @@ impl From::<LuaCodempError> for LuaError {
 	}
 }
 
-fn cursor_to_table(lua: &Lua, cur: CodempCursorEvent) -> LuaResult<LuaTable> {
-	let pos = cur.position.unwrap_or_default();
-	let start = lua.create_table()?;
-	start.set(1, pos.start().row)?;
-	start.set(2, pos.start().col)?;
-	let end = lua.create_table()?;
-	end.set(1, pos.end().row)?;
-	end.set(2, pos.end().col)?;
-	let out = lua.create_table()?;
-	out.set("user", cur.user)?;
-	out.set("buffer", pos.buffer)?;
-	out.set("start", start)?;
-	out.set("finish", end)?;
-	Ok(out)
-}
-
+// TODO put friendlier constructor directly in lib?
 fn make_cursor(buffer: String, start_row: i32, start_col: i32, end_row: i32, end_col: i32) -> CodempCursorPosition {
 	CodempCursorPosition {
 		buffer,
@@ -67,6 +52,8 @@ fn get_buffer(_: &Lua, (path,): (String,)) -> LuaResult<LuaBufferController> {
 	)
 }
 
+
+
 /// join a remote workspace and start processing cursor events
 fn join(_: &Lua, (session,): (String,)) -> LuaResult<LuaCursorController> {
 	let controller = CODEMP_INSTANCE.join(&session)
@@ -82,9 +69,9 @@ impl LuaUserData for LuaCursorController {
 		methods.add_method("send", |_, this, (usr, sr, sc, er, ec):(String, i32, i32, i32, i32)| {
 			Ok(this.0.send(make_cursor(usr, sr, sc, er, ec)).map_err(LuaCodempError::from)?)
 		});
-		methods.add_method("try_recv", |lua, this, ()| {
+		methods.add_method("try_recv", |_, this, ()| {
 			match this.0.try_recv() .map_err(LuaCodempError::from)? {
-				Some(x) => Ok(Some(cursor_to_table(lua, x)?)),
+				Some(x) => Ok(Some(LuaCursorEvent(x))),
 				None => Ok(None),
 			}
 		});
@@ -93,6 +80,27 @@ impl LuaUserData for LuaCursorController {
 					.map_err(LuaCodempError::from)?;
 			Ok(())
 		});
+	}
+}
+
+#[derive(Debug, derive_more::From)]
+struct LuaCursorEvent(CodempCursorEvent);
+impl LuaUserData for LuaCursorEvent {
+	fn add_fields<'lua, F: LuaUserDataFields<'lua, Self>>(fields: &mut F) {
+		fields.add_field_method_get("user", |_, this| Ok(this.0.user.clone()));
+		fields.add_field_method_get("position", |_, this|
+			Ok(this.0.position.as_ref().map(|x| LuaCursorPosition(x.clone())))
+		);
+	}
+}
+
+#[derive(Debug, derive_more::From)]
+struct LuaCursorPosition(CodempCursorPosition);
+impl LuaUserData for LuaCursorPosition {
+	fn add_fields<'lua, F: LuaUserDataFields<'lua, Self>>(fields: &mut F) {
+		fields.add_field_method_get("buffer", |_, this| Ok(this.0.buffer.clone()));
+		fields.add_field_method_get("start",  |_, this| Ok(LuaRowCol(this.0.start())));
+		fields.add_field_method_get("finish", |_, this| Ok(LuaRowCol(this.0.end())));
 	}
 }
 

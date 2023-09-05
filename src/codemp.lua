@@ -132,7 +132,6 @@ vim.api.nvim_create_user_command(
 	"Join",
 	function (args)
 		local controller = codemp.join(args.args)
-		local buffer = vim.api.nvim_get_current_buf()
 
 		-- hook serverbound callbacks
 		vim.api.nvim_create_autocmd({"CursorMoved", "CursorMovedI", "ModeChanged"}, {
@@ -154,14 +153,17 @@ vim.api.nvim_create_user_command(
 					hi = available_colors[ math.random( #available_colors ) ],
 				}
 			end
-			vim.api.nvim_buf_clear_namespace(buffer, user_mappings[event.user].ns, 0, -1)
-			multiline_highlight(
-				buffer,
-				user_mappings[event.user].ns,
-				user_mappings[event.user].hi,
-				event.start,
-				event.finish
-			)
+			local buffer = buffer_mappings[event.position.buffer]
+			if buffer ~= nil then
+				vim.api.nvim_buf_clear_namespace(buffer, user_mappings[event.user].ns, 0, -1)
+				multiline_highlight(
+					buffer,
+					user_mappings[event.user].ns,
+					user_mappings[event.user].hi,
+					event.position.start,
+					event.position.finish
+				)
+			end
 		end)
 
 		print(" ++ joined workspace " .. args.args)
