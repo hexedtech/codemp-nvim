@@ -96,14 +96,15 @@ local function buffer_set_content(buf, content)
 end
 
 local function multiline_highlight(buf, ns, group, start, fini)
-	if start[2] == fini[2] then fini[2] = fini[2] + 1 end
-	for i=start[1],fini[1] do
-		if i == start[1] and i == fini[1] then
-			vim.api.nvim_buf_add_highlight(buf, ns, group, i, start[2], fini[2])
-		elseif i == start[1] then
-			vim.api.nvim_buf_add_highlight(buf, ns, group, i, start[2], -1)
-		elseif i == fini[1] then
-			vim.api.nvim_buf_add_highlight(buf, ns, group, i, 0, fini[2])
+	for i=start.row,fini.row do
+		if i == start.row and i == fini.row then
+			local fini_col = fini.col
+			if start.col == fini.col then fini_col = fini_col + 1 end
+			vim.api.nvim_buf_add_highlight(buf, ns, group, i, start.col, fini_col)
+		elseif i == start.row then
+			vim.api.nvim_buf_add_highlight(buf, ns, group, i, start.col, -1)
+		elseif i == fini.row then
+			vim.api.nvim_buf_add_highlight(buf, ns, group, i, 0, fini.col)
 		else
 			vim.api.nvim_buf_add_highlight(buf, ns, group, i, 0, -1)
 		end
@@ -111,6 +112,7 @@ local function multiline_highlight(buf, ns, group, start, fini)
 end
 
 local buffer_mappings = {}
+local buffer_mappings_reverse = {} -- TODO maybe not???
 local user_mappings = {}
 local available_colors = {
 	"ErrorMsg",
@@ -153,7 +155,7 @@ vim.api.nvim_create_user_command(
 					hi = available_colors[ math.random( #available_colors ) ],
 				}
 			end
-			local buffer = buffer_mappings[event.position.buffer]
+			local buffer = buffer_mappings_reverse[event.position.buffer]
 			if buffer ~= nil then
 				vim.api.nvim_buf_clear_namespace(buffer, user_mappings[event.user].ns, 0, -1)
 				multiline_highlight(
@@ -193,6 +195,7 @@ vim.api.nvim_create_user_command(
 
 		local buffer = vim.api.nvim_get_current_buf()
 		buffer_mappings[buffer] = args.args
+		buffer_mappings_reverse[args.args] = buffer
 
 		buffer_set_content(buffer, controller.content)
 
