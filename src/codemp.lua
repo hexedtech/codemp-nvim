@@ -110,6 +110,8 @@ local function multiline_highlight(buf, ns, group, start, fini)
 	end
 end
 
+local buffer_mappings = {}
+
 vim.api.nvim_create_user_command(
 	"Connect",
 	function (args)
@@ -131,7 +133,10 @@ vim.api.nvim_create_user_command(
 			group = vim.api.nvim_create_augroup("codemp-workspace-" .. args.args, { clear = true }),
 			callback = function (_)
 				local cur = cursor_position()
-				controller:send("", cur[1][1], cur[1][2], cur[2][1], cur[2][2])
+				local buf = vim.api.nvim_get_current_buf()
+				if buffer_mappings[buf] ~= nil then
+					controller:send(buffer_mappings[buf], cur[1][1], cur[1][2], cur[2][1], cur[2][2])
+				end
 			end
 		})
 
@@ -167,6 +172,7 @@ vim.api.nvim_create_user_command(
 		local controller = codemp.attach(args.args)
 
 		local buffer = vim.api.nvim_get_current_buf()
+		buffer_mappings[buffer] = args.args
 
 		buffer_set_content(buffer, controller.content)
 
