@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::{Arc, Mutex}, fs::File};
 
 use codemp::prelude::*;
 use mlua::prelude::*;
@@ -179,9 +179,23 @@ impl LuaUserData for LuaRowCol {
 
 
 
+// setup library logging to file
+fn setup_tracing(_: &Lua, (path,): (String,)) -> LuaResult<()> {
+	let log_file = File::create(path)?;
+	tracing_subscriber::fmt()
+		.with_max_level(tracing::Level::INFO)
+		.with_writer(Mutex::new(log_file))
+		.init();
+	Ok(())
+}
+
+
+
+// define module and exports
 #[mlua::lua_module]
 fn libcodemp_nvim(lua: &Lua) -> LuaResult<LuaTable> {
 	let exports = lua.create_table()?;
+	exports.set("setup_tracing", lua.create_function(setup_tracing)?)?;
 	exports.set("connect", lua.create_function(connect)?)?;
 	exports.set("join",    lua.create_function(join)?)?;
 	exports.set("create",  lua.create_function(create)?)?;
