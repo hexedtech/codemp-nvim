@@ -111,6 +111,13 @@ local function multiline_highlight(buf, ns, group, start, fini)
 end
 
 local buffer_mappings = {}
+local user_mappings = {}
+local available_colors = {
+	"ErrorMsg",
+	"WarningMsg",
+	"MatchParen",
+	"SpecialMode",
+}
 
 vim.api.nvim_create_user_command(
 	"Connect",
@@ -126,7 +133,6 @@ vim.api.nvim_create_user_command(
 	function (args)
 		local controller = codemp.join(args.args)
 		local buffer = vim.api.nvim_get_current_buf()
-		local ns = vim.api.nvim_create_namespace("codemp-cursors")
 
 		-- hook serverbound callbacks
 		vim.api.nvim_create_autocmd({"CursorMoved", "CursorMovedI", "ModeChanged"}, {
@@ -142,8 +148,20 @@ vim.api.nvim_create_user_command(
 
 		-- hook clientbound callbacks
 		register_controller_handler(nil, controller, function(event)
-			vim.api.nvim_buf_clear_namespace(buffer, ns, 0, -1)
-			multiline_highlight(buffer, ns, "ErrorMsg", event.start, event.finish)
+			if user_mappings[event.user] == nil then
+				user_mappings[event.user] = {
+					ns = vim.api.nvim_create_namespace("codemp-cursor-" .. event.user),
+					hi = available_colors[ math.random( #available_colors ) ],
+				}
+			end
+			vim.api.nvim_buf_clear_namespace(buffer, user_mappings[event.user].ns, 0, -1)
+			multiline_highlight(
+				buffer,
+				user_mappings[event.user].ns,
+				user_mappings[event.user].hi,
+				event.start,
+				event.finish
+			)
 		end)
 
 		print(" ++ joined workspace " .. args.args)
