@@ -188,10 +188,11 @@ impl LuaUserData for LuaRowCol {
 
 
 // setup library logging to file
-fn setup_tracing(_: &Lua, (path,): (String,)) -> LuaResult<()> {
+fn setup_tracing(_: &Lua, (path, debug): (String, Option<bool>)) -> LuaResult<()> {
 	let log_file = File::create(path)?;
+	let level = if debug.unwrap_or(false) { tracing::Level::DEBUG } else {tracing::Level::INFO };
 	tracing_subscriber::fmt()
-		.with_max_level(tracing::Level::INFO)
+		.with_max_level(level)
 		.with_writer(Mutex::new(log_file))
 		.init();
 	Ok(())
@@ -203,12 +204,17 @@ fn setup_tracing(_: &Lua, (path,): (String,)) -> LuaResult<()> {
 #[mlua::lua_module]
 fn libcodemp_nvim(lua: &Lua) -> LuaResult<LuaTable> {
 	let exports = lua.create_table()?;
-	exports.set("setup_tracing", lua.create_function(setup_tracing)?)?;
+
+	// core proto functions
 	exports.set("connect", lua.create_function(connect)?)?;
 	exports.set("join",    lua.create_function(join)?)?;
 	exports.set("create",  lua.create_function(create)?)?;
 	exports.set("attach",  lua.create_function(attach)?)?;
+	// state helpers
 	exports.set("get_cursor", lua.create_function(get_cursor)?)?;
 	exports.set("get_buffer", lua.create_function(get_buffer)?)?;
+	// debug
+	exports.set("setup_tracing", lua.create_function(setup_tracing)?)?;
+
 	Ok(exports)
 }
