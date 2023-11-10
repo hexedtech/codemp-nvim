@@ -2,6 +2,7 @@ use std::io::Write;
 use std::sync::{Arc, Mutex, mpsc};
 
 use codemp::prelude::*;
+use codemp::woot::crdt::Op;
 use mlua::prelude::*;
 
 
@@ -27,7 +28,9 @@ fn make_cursor(buffer: String, start_row: i32, start_col: i32, end_row: i32, end
 	}
 }
 
-
+#[derive(Debug, derive_more::From)]
+struct LuaOp(Op);
+impl LuaUserData for LuaOp { }
 
 /// connect to remote server
 fn connect(_: &Lua, (host,): (Option<String>,)) -> LuaResult<()> {
@@ -66,7 +69,7 @@ fn join(_: &Lua, (session,): (String,)) -> LuaResult<LuaCursorController> {
 struct LuaCursorController(Arc<CodempCursorController>);
 impl LuaUserData for LuaCursorController {
 	fn add_methods<'lua, M: LuaUserDataMethods<'lua, Self>>(methods: &mut M) {
-		methods.add_meta_method(LuaMetaMethod::ToString, |_, this, ()| Ok(format!("{:?}", this)));
+		methods.add_meta_method(LuaMetaMethod::ToString, |_, this, ()| Ok(format!("{:?}", this.0)));
 		methods.add_method("send", |_, this, (usr, sr, sc, er, ec):(String, i32, i32, i32, i32)| {
 			Ok(this.0.send(make_cursor(usr, sr, sc, er, ec)).map_err(LuaCodempError::from)?)
 		});
@@ -127,25 +130,22 @@ fn attach(_: &Lua, (path,): (String,)) -> LuaResult<LuaBufferController> {
 struct LuaBufferController(Arc<CodempBufferController>);
 impl LuaUserData for LuaBufferController {
 	fn add_methods<'lua, M: LuaUserDataMethods<'lua, Self>>(methods: &mut M) {
-		methods.add_meta_method(LuaMetaMethod::ToString, |_, this, ()| Ok(format!("{:?}", this)));
-		methods.add_method("delta", |_, this, (start, txt, end):(usize, String, usize)| {
-			match this.0.delta(start, &txt, end) {
-				Some(op) => Ok(this.0.send(op).map_err(LuaCodempError::from)?),
-				None => Err(LuaError::RuntimeError("wtf".into())),
-			}
-		});
-		methods.add_method("replace", |_, this, txt:String| {
-			match this.0.replace(&txt) {
-				Some(op) => Ok(this.0.send(op).map_err(LuaCodempError::from)?),
-				None => Ok(()),
-			}
-		});
-		methods.add_method("insert", |_, this, (txt, pos):(String, u64)| {
-			Ok(this.0.send(this.0.insert(&txt, pos)).map_err(LuaCodempError::from)?)
+		methods.add_meta_method(LuaMetaMethod::ToString, |_, this, ()| Ok(format!("{:?}", this.0)));
+		methods.add_method("send", |_, this, (start, end, text): (usize, usize, String)| {
+			Ok(
+				this.0.send(
+					CodempTextChange {
+						span: start..end,
+						content: text,
+						after: "".into(),
+					}
+				)
+					.map_err(LuaCodempError::from)?
+			)
 		});
 		methods.add_method("try_recv", |_, this, ()| {
 			match this.0.try_recv() .map_err(LuaCodempError::from)? {
-				Some(x) => Ok(Some(LuaTextChange(x))),
+				Some(x) => Ok(Some(x)),
 				None => Ok(None),
 			}
 		});
@@ -157,7 +157,7 @@ impl LuaUserData for LuaBufferController {
 	}
 
 	fn add_fields<'lua, F: LuaUserDataFields<'lua, Self>>(fields: &mut F) {
-		fields.add_field_method_get("content", |_, this| Ok(this.0.content()));
+		fields.add_field_method_get("content", |_, this| Ok(this.0.try_recv().unwrap().unwrap()));
 	}
 }
 
@@ -166,14 +166,19 @@ struct LuaTextChange(CodempTextChange);
 impl LuaUserData for LuaTextChange {
 	fn add_fields<'lua, F: LuaUserDataFields<'lua, Self>>(fields: &mut F) {
 		fields.add_field_method_get("content", |_, this| Ok(this.0.content.clone()));
-		// fields.add_field_method_get("start",   |_, this| Ok(LuaRowCol(this.0.start())));
-		// fields.add_field_method_get("finish",  |_, this| Ok(LuaRowCol(this.0.end())));
-		// fields.add_field_method_get("before",  |_, this| Ok((*this.0.before).clone()));
-		// fields.add_field_method_get("after",   |_, this| Ok((*this.0.after).clone()));
+		fields.add_field_method_get("start",   |_, this| Ok(this.0.span.start));
+		fields.add_field_method_get("finish",  |_, this| Ok(this.0.span.end));
 	}
 
 	fn add_methods<'lua, M: LuaUserDataMethods<'lua, Self>>(methods: &mut M) {
-		methods.add_meta_method(LuaMetaMethod::ToString, |_, this, ()| Ok(format!("{:?}", this)));
+		methods.add_meta_function(LuaMetaMethod::Call, |_, (start, end, txt): (usize, usize, String)| {
+			Ok(LuaTextChange(CodempTextChange {
+				span: start..end,
+				content: txt,
+				after: "".into(),
+			}))
+		});
+		methods.add_meta_method(LuaMetaMethod::ToString, |_, this, ()| Ok(format!("{:?}", this.0)));
 	}
 }
 

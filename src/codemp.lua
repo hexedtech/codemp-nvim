@@ -25,17 +25,6 @@ local function register_controller_handler(target, controller, handler)
 	end, async, target)
 end
 
--- local function byte2rowcol(buf, x)
--- 	local row
--- 	local row_start
--- 	vim.api.nvim_buf_call(buf, function ()
--- 		row = vim.fn.byte2line(x)
--- 		row_start = vim.fn.line2byte(row)
--- 	end)
--- 	local col = x - row_start
--- 	return { row, col }
--- end
-
 local function split_without_trim(str, sep)
 	local res = vim.fn.split(str, sep)
 	if str:sub(1,1) == "\n" then
@@ -114,11 +103,14 @@ end
 local buffer_mappings = {}
 local buffer_mappings_reverse = {} -- TODO maybe not???
 local user_mappings = {}
-local available_colors = {
+local available_colors = { -- TODO these are definitely not portable!
 	"ErrorMsg",
 	"WarningMsg",
 	"MatchParen",
 	"SpecialMode",
+	"CmpItemKindFunction",
+	"CmpItemKindValue",
+	"CmpItemKindInterface",
 }
 
 vim.api.nvim_create_user_command(
@@ -193,6 +185,8 @@ vim.api.nvim_create_user_command(
 	function (args)
 		local controller = codemp.attach(args.args)
 
+		-- TODO map name to uuid
+
 		local buffer = vim.api.nvim_get_current_buf()
 		buffer_mappings[buffer] = args.args
 		buffer_mappings_reverse[args.args] = buffer
@@ -202,7 +196,8 @@ vim.api.nvim_create_user_command(
 		-- hook serverbound callbacks
 		vim.api.nvim_buf_attach(buffer, false, {
 			on_lines = function (_, buf, tick, firstline, lastline, new_lastline, old_byte_size)
-				if tick == codemp_changed_tick then return end
+				local content = buffer_get_content(buf)
+				controller:send(0, #content - 1, content)
 				-- print(string.format(">[%s] %s:%s|%s (%s)", tick, firstline, lastline, new_lastline, old_byte_size))
 				-- local start_index = firstline == 0 and 0 or vim.fn.line2byte(firstline + 1) - 1
 				-- local text = table.concat(
@@ -214,8 +209,6 @@ vim.api.nvim_create_user_command(
 				-- -- end
 				-- print(string.format(">delta [%d,%s,%d]", start_index, text, start_index + old_byte_size - 1))
 				-- controller:delta(start_index, text, start_index + old_byte_size - 1)
-				local content = buffer_get_content(buf)
-				controller:replace(content)
 			end
 		})
 
@@ -232,7 +225,7 @@ vim.api.nvim_create_user_command(
 			-- 	buffer, start.row, start.col, finish.row, finish.col,
 			-- 	split_without_trim(event.content, "\n")
 			-- )
-			buffer_set_content(buffer, controller.content)
+			buffer_set_content(buffer, event)
 		end)
 
 		print(" ++ joined workspace " .. args.args)
