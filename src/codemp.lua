@@ -240,6 +240,16 @@ vim.api.nvim_create_user_command(
 	{ nargs = 1 }
 )
 
+-- TODO nvim docs say that we should stop all threads before exiting nvim
+--  but we like to live dangerously (:
+vim.loop.new_thread({}, function()
+	local _codemp = require("libcodemp_nvim")
+	local logger = _codemp.setup_tracing()
+	while true do
+		print(logger:recv())
+	end
+end)
+
 return {
 	lib = codemp,
 	utils = {

@@ -1,4 +1,5 @@
-use std::{sync::{Arc, Mutex}, fs::File};
+use std::io::Write;
+use std::sync::{Arc, Mutex, mpsc};
 
 use codemp::prelude::*;
 use mlua::prelude::*;
@@ -188,14 +189,53 @@ impl LuaUserData for LuaRowCol {
 
 
 // setup library logging to file
-fn setup_tracing(_: &Lua, (path, debug): (String, Option<bool>)) -> LuaResult<()> {
-	let log_file = File::create(path)?;
+#[derive(Debug, derive_more::From)]
+struct LuaLogger(Arc<Mutex<mpsc::Receiver<String>>>);
+impl LuaUserData for LuaLogger {
+	fn add_methods<'lua, M: LuaUserDataMethods<'lua, Self>>(methods: &mut M) {
+		methods.add_method("recv", |_, this, ()| {
+			Ok(
+				this.0
+					.lock()
+					.expect("logger mutex poisoned")
+					.recv()
+					.expect("logger channel closed")
+			)
+		});
+	}
+}
+
+#[derive(Debug, Clone)]
+struct LuaLoggerProducer(mpsc::Sender<String>);
+impl Write for LuaLoggerProducer {
+	fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+		self.0.send(String::from_utf8_lossy(buf).to_string())
+			.expect("could not write on logger channel");
+		Ok(buf.len())
+	}
+
+	fn flush(&mut self) -> std::io::Result<()> { Ok(()) }
+}
+
+fn setup_tracing(_: &Lua, (debug,): (Option<bool>,)) -> LuaResult<LuaLogger> {
+	let (tx, rx) = mpsc::channel();
 	let level = if debug.unwrap_or(false) { tracing::Level::DEBUG } else {tracing::Level::INFO };
+	let format = tracing_subscriber::fmt::format()
+		.with_level(true)
+		.with_target(true)
+		.with_thread_ids(false)
+		.with_thread_names(false)
+		.with_ansi(false)
+		.with_file(false)
+		.with_line_number(false)
+		.with_source_location(false)
+		.compact();
 	tracing_subscriber::fmt()
+		.event_format(format)
 		.with_max_level(level)
-		.with_writer(Mutex::new(log_file))
+		.with_writer(Mutex::new(LuaLoggerProducer(tx)))
 		.init();
-	Ok(())
+	Ok(LuaLogger(Arc::new(Mutex::new(rx))))
 }
 
 
