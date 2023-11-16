@@ -145,7 +145,7 @@ impl LuaUserData for LuaBufferController {
 		});
 		methods.add_method("try_recv", |_, this, ()| {
 			match this.0.try_recv() .map_err(LuaCodempError::from)? {
-				Some(x) => Ok(Some(x.content)),
+				Some(x) => Ok(Some(LuaTextChange(x))),
 				None => Ok(None),
 			}
 		});
@@ -169,8 +169,8 @@ struct LuaTextChange(CodempTextChange);
 impl LuaUserData for LuaTextChange {
 	fn add_fields<'lua, F: LuaUserDataFields<'lua, Self>>(fields: &mut F) {
 		fields.add_field_method_get("content", |_, this| Ok(this.0.content.clone()));
-		fields.add_field_method_get("start",   |_, this| Ok(this.0.span.start));
-		fields.add_field_method_get("finish",  |_, this| Ok(this.0.span.end));
+		fields.add_field_method_get("first",   |_, this| Ok(this.0.span.start));
+		fields.add_field_method_get("last",  |_, this| Ok(this.0.span.end));
 	}
 
 	fn add_methods<'lua, M: LuaUserDataMethods<'lua, Self>>(methods: &mut M) {
