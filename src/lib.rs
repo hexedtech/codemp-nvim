@@ -145,7 +145,7 @@ impl LuaUserData for LuaBufferController {
 		});
 		methods.add_method("try_recv", |_, this, ()| {
 			match this.0.try_recv() .map_err(LuaCodempError::from)? {
-				Some(x) => Ok(Some(x)),
+				Some(x) => Ok(Some(x.content)),
 				None => Ok(None),
 			}
 		});
@@ -157,7 +157,10 @@ impl LuaUserData for LuaBufferController {
 	}
 
 	fn add_fields<'lua, F: LuaUserDataFields<'lua, Self>>(fields: &mut F) {
-		fields.add_field_method_get("content", |_, this| Ok(this.0.try_recv().unwrap().unwrap()));
+		fields.add_field_method_get("content", |_, this| Ok(
+			this.0.try_recv().map(|x| x.map(|y| y.content))
+				.map_err(LuaCodempError::from)?
+		));
 	}
 }
 

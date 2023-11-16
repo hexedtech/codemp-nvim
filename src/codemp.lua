@@ -1,6 +1,6 @@
 local codemp = require("libcodemp_nvim")
 
-local codemp_changed_tick = nil -- TODO this doesn't work when events are coalesced
+local codemp_changed_tick = 0 -- TODO this doesn't work when events are coalesced
 
 local function register_controller_handler(target, controller, handler)
 	local async = vim.loop.new_async(function()
@@ -191,11 +191,12 @@ vim.api.nvim_create_user_command(
 		buffer_mappings[buffer] = args.args
 		buffer_mappings_reverse[args.args] = buffer
 
-		buffer_set_content(buffer, controller.content)
+		-- buffer_set_content(buffer, controller.content)
 
 		-- hook serverbound callbacks
 		vim.api.nvim_buf_attach(buffer, false, {
 			on_lines = function (_, buf, tick, firstline, lastline, new_lastline, old_byte_size)
+				if tick <= codemp_changed_tick then return end
 				local content = buffer_get_content(buf)
 				controller:send(0, #content - 1, content)
 				-- print(string.format(">[%s] %s:%s|%s (%s)", tick, firstline, lastline, new_lastline, old_byte_size))
