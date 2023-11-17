@@ -2,7 +2,7 @@ local codemp = require("libcodemp_nvim")
 
 local codemp_changed_tick = 0 -- TODO this doesn't work when events are coalesced
 
-local function register_controller_handler(target, controller, handler)
+local function register_controller_handler(target, controller, handler, delay)
 	local async = vim.loop.new_async(function()
 		while true do
 			local event = controller:try_recv()
@@ -15,14 +15,15 @@ local function register_controller_handler(target, controller, handler)
 	--  completely useless. We can circumvent this by requiring codemp again in the new 
 	--  thread and requesting a new reference to the same controller from che global instance
 	-- NOTE variables prefixed with underscore live in another Lua runtime
-	vim.loop.new_thread({}, function(_async, _target)
+	vim.loop.new_thread({}, function(_async, _target, _delay)
+		if _delay ~= nil then vim.loop.sleep(_delay) end
 		local _codemp = require("libcodemp_nvim")
 		local _controller = _target ~= nil and _codemp.get_buffer(_target) or _codemp.get_cursor()
 		while true do
 			_controller:poll()
 			_async:send()
 		end
-	end, async, target)
+	end, async, target, delay)
 end
 
 local function split_without_trim(str, sep)
@@ -223,11 +224,17 @@ vim.api.nvim_create_user_command(
 			end
 		})
 
+		-- This is an ugly as hell fix: basically we receive all operations real fast at the start
+		--  so the buffer changes rapidly and it messes up tracking our delta/diff state and we 
+		--  get borked translated TextChanges (the underlying CRDT is fine)
+		-- basically delay a bit so that it has time to sync and we can then get "normal slow" changes
+		-- vim.loop.sleep(200) -- moved inside poller thread to at least not block ui
+
 		-- hook clientbound callbacks
 		register_controller_handler(args.args, controller, function(event)
 			codemp_changed_tick = vim.api.nvim_buf_get_changedtick(buffer) + 1
 			buffer_replace_content(buffer, event.first, event.last, event.content)
-		end)
+		end, 200) -- delay by 200 ms as ugly fix
 
 		print(" ++ joined workspace " .. args.args)
 	end,

@@ -137,7 +137,6 @@ impl LuaUserData for LuaBufferController {
 					CodempTextChange {
 						span: start..end,
 						content: text,
-						after: "".into(),
 					}
 				)
 					.map_err(LuaCodempError::from)?
@@ -178,7 +177,6 @@ impl LuaUserData for LuaTextChange {
 			Ok(LuaTextChange(CodempTextChange {
 				span: start..end,
 				content: txt,
-				after: "".into(),
 			}))
 		});
 		methods.add_meta_method(LuaMetaMethod::ToString, |_, this, ()| Ok(format!("{:?}", this.0)));

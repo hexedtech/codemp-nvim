@@ -7,7 +7,7 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-codemp = { git = "ssh://git@github.com/codewithotherpeopleandchangenamelater/codemp.git", rev = "486999bc31b8a925d56ee6d3747b06fcd97b00d5", features = ["global", "sync"] }
+codemp = { git = "ssh://git@github.com/codewithotherpeopleandchangenamelater/codemp.git", rev = "c7319b9f68b19b0b34ecf71cc4b00999248bbd14", features = ["global", "sync"] }
 mlua = { version = "0.9.0", features = ["module", "luajit"] }
 thiserror = "1.0.47"
 derive_more = "0.99.17"
