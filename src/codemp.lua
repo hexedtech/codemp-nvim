@@ -197,6 +197,7 @@ vim.api.nvim_create_user_command(
 				if tick <= codemp_changed_tick then return end
 				local start = vim.api.nvim_buf_get_offset(buf, firstline)
 				local content = table.concat(vim.api.nvim_buf_get_lines(buf, firstline, new_lastline, false), '\n')
+				if start == -1 then start = 0 end
 				if new_lastline < lastline then old_byte_size = old_byte_size + 1 end
 				controller:send(start, start + old_byte_size - 1, content)
 			end
@@ -206,16 +207,6 @@ vim.api.nvim_create_user_command(
 		register_controller_handler(args.args, controller, function(event)
 			codemp_changed_tick = vim.api.nvim_buf_get_changedtick(buffer) + 1
 			buffer_set_content(buffer, event.content)
-			-- local start_row = vim.api.nvim_buf_get_offset(buffer, event.first)
-			-- local end_row = vim.api.nvim_buf_get_offset(buffer, event.last - 1)
-			-- vim.api.nvim_buf_set_text(
-			-- 	buffer,
-			-- 	start_row,
-			-- 	event.first - start_row,
-			-- 	end_row,
-			-- 	event.last - end_row,
-			-- 	vim.fn.split(event.content, '\n', true)
-			-- )
 		end)
 
 		print(" ++ joined workspace " .. args.args)
