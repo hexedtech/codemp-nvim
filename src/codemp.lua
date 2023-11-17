@@ -79,9 +79,29 @@ local function buffer_get_content(buf)
 	return table.concat(lines, '\n')
 end
 
-local function buffer_set_content(buf, content)
-	local lines = split_without_trim(content, "\n")
-	vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+-- local function buffer_set_content(buf, content)
+-- 	local lines = split_without_trim(content, "\n")
+-- 	vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+-- end
+
+local function buffer_replace_content(buffer, first, last, content)
+	-- TODO send help it works but why is lost knowledge
+	local start_row = vim.fn.byte2line(first + 1) - 1
+	if start_row < 0 then start_row = 0 end
+	local start_row_byte = vim.fn.line2byte(start_row + 1) - 1
+	if start_row_byte < 0 then start_row_byte = 0 end
+	local end_row = vim.fn.byte2line(last + 1) - 1
+	if end_row < 0 then end_row = 0 end
+	local end_row_byte = vim.fn.line2byte(end_row + 1) - 1
+	if end_row_byte < 0 then end_row_byte = 0 end
+	vim.api.nvim_buf_set_text(
+		buffer,
+		start_row,
+		first - start_row_byte,
+		end_row,
+		last - end_row_byte,
+		vim.fn.split(content, '\n', true)
+	)
 end
 
 local function multiline_highlight(buf, ns, group, start, fini)
@@ -206,7 +226,7 @@ vim.api.nvim_create_user_command(
 		-- hook clientbound callbacks
 		register_controller_handler(args.args, controller, function(event)
 			codemp_changed_tick = vim.api.nvim_buf_get_changedtick(buffer) + 1
-			buffer_set_content(buffer, event.content)
+			buffer_replace_content(buffer, event.first, event.last, event.content)
 		end)
 
 		print(" ++ joined workspace " .. args.args)
