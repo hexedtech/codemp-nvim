@@ -223,6 +223,18 @@ impl Write for LuaLoggerProducer {
 	fn flush(&mut self) -> std::io::Result<()> { Ok(()) }
 }
 
+fn disconnect_buffer(_: &Lua, (path,): (String,)) -> LuaResult<()> {
+	CODEMP_INSTANCE.disconnect_buffer(&path)
+		.map_err(LuaCodempError::from)?;
+	Ok(())
+}
+
+fn leave_workspace(_: &Lua, (): ()) -> LuaResult<()> {
+	CODEMP_INSTANCE.leave_workspace()
+		.map_err(LuaCodempError::from)?;
+	Ok(())
+}
+
 fn setup_tracing(_: &Lua, (debug,): (Option<bool>,)) -> LuaResult<LuaLogger> {
 	let (tx, rx) = mpsc::channel();
 	let level = if debug.unwrap_or(false) { tracing::Level::DEBUG } else {tracing::Level::INFO };
@@ -259,6 +271,9 @@ fn libcodemp_nvim(lua: &Lua) -> LuaResult<LuaTable> {
 	// state helpers
 	exports.set("get_cursor", lua.create_function(get_cursor)?)?;
 	exports.set("get_buffer", lua.create_function(get_buffer)?)?;
+	// cleanup
+	exports.set("disconnect_buffer", lua.create_function(disconnect_buffer)?)?;
+	exports.set("leave_workspace", lua.create_function(leave_workspace)?)?;
 	// debug
 	exports.set("setup_tracing", lua.create_function(setup_tracing)?)?;
 

@@ -5,9 +5,13 @@ local codemp_changed_tick = 0 -- TODO this doesn't work when events are coalesce
 local function register_controller_handler(target, controller, handler, delay)
 	local async = vim.loop.new_async(function()
 		while true do
-			local event = controller:try_recv()
-			if event == nil then break end
-			vim.schedule(function() handler(event) end)
+			local success, event = pcall(controller.try_recv, controller)
+			if success then
+				if event == nil then break end
+				vim.schedule(function() handler(event) end)
+			else
+				print("error receiving: deadlocked?")
+			end
 		end
 	end)
 	-- TODO controller can't be passed to the uvloop new_thread: when sent to the new 
@@ -20,8 +24,16 @@ local function register_controller_handler(target, controller, handler, delay)
 		local _codemp = require("libcodemp_nvim")
 		local _controller = _target ~= nil and _codemp.get_buffer(_target) or _codemp.get_cursor()
 		while true do
-			_controller:poll()
-			_async:send()
+			local success, _ = pcall(_controller.poll, _controller)
+			if success then
+				_async:send()
+			else
+				local my_name = "cursor"
+				if _target ~= nil then
+					my_name = "buffer(" .. _target .. ")"
+				end
+				print(" -- stopping " .. my_name .. " controller poller")
+			end
 		end
 	end, async, target, delay)
 end
@@ -204,18 +216,24 @@ vim.api.nvim_create_user_command(
 vim.api.nvim_create_user_command(
 	"Attach",
 	function (args)
+		local buffer = vim.api.nvim_create_buf(true, true)
+		vim.api.nvim_buf_set_option(buffer, 'fileformat', 'unix')
+		vim.api.nvim_buf_set_option(buffer, 'filetype', 'codemp')
+		vim.api.nvim_buf_set_name(buffer, "codemp::" .. args.args)
+		vim.api.nvim_set_current_buf(buffer)
 		local controller = codemp.attach(args.args)
 
 		-- TODO map name to uuid
 
-		local buffer = vim.api.nvim_get_current_buf()
 		buffer_mappings[buffer] = args.args
 		buffer_mappings_reverse[args.args] = buffer
 
 		-- hook serverbound callbacks
+		-- TODO breaks when deleting whole lines at buffer end
 		vim.api.nvim_buf_attach(buffer, false, {
 			on_lines = function (_, buf, tick, firstline, lastline, new_lastline, old_byte_size)
 				if tick <= codemp_changed_tick then return end
+				if buffer_mappings[buf] == nil then return true end -- exit worker
 				local start = vim.api.nvim_buf_get_offset(buf, firstline)
 				local content = table.concat(vim.api.nvim_buf_get_lines(buf, firstline, new_lastline, false), '\n')
 				if start == -1 then start = 0 end
@@ -234,11 +252,35 @@ vim.api.nvim_create_user_command(
 		register_controller_handler(args.args, controller, function(event)
 			codemp_changed_tick = vim.api.nvim_buf_get_changedtick(buffer) + 1
 			buffer_replace_content(buffer, event.first, event.last, event.content)
-		end, 200) -- delay by 200 ms as ugly fix
+		end, 500) -- delay by 200 ms as ugly fix
 
-		print(" ++ joined workspace " .. args.args)
+		print(" ++ attached to buffer " .. args.args)
 	end,
 	{ nargs = 1 }
+)
+
+vim.api.nvim_create_user_command(
+	"Detach",
+	function (args)
+		local buffer = buffer_mappings_reverse[args.args]
+		if buffer == nil then buffer = vim.api.nvim_get_current_buf() end
+		local name = buffer_mappings[buffer]
+		buffer_mappings[buffer] = nil
+		buffer_mappings_reverse[name] = nil
+		codemp.disconnect_buffer(name)
+		vim.api.nvim_buf_delete(buffer, {})
+		print(" -- detached from buffer " .. name)
+	end,
+	{ nargs = '?' }
+)
+
+vim.api.nvim_create_user_command(
+	"Leave",
+	function (_)
+		codemp.leave_workspace()
+		print(" -- left workspace")
+	end,
+	{}
 )
 
 -- TODO nvim docs say that we should stop all threads before exiting nvim
