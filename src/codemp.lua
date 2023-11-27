@@ -92,10 +92,10 @@ local function buffer_get_content(buf)
 	return table.concat(lines, '\n')
 end
 
--- local function buffer_set_content(buf, content)
--- 	local lines = split_without_trim(content, "\n")
--- 	vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
--- end
+local function buffer_set_content(buf, content)
+	local lines = split_without_trim(content, "\n")
+	vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+end
 
 local function buffer_replace_content(buffer, first, last, content)
 	-- TODO send help it works but why is lost knowledge
@@ -257,6 +257,23 @@ vim.api.nvim_create_user_command(
 		print(" ++ attached to buffer " .. args.args)
 	end,
 	{ nargs = 1 }
+)
+
+vim.api.nvim_create_user_command(
+	"Sync",
+	function (args)
+		local buffer = vim.api.nvim_get_current_buf()
+		local name = buffer_mappings[buffer]
+		if name ~= nil then
+			local controller = codemp.get_buffer(name)
+			codemp_changed_tick = vim.api.nvim_buf_get_changedtick(buffer) + 1
+			buffer_set_content(buffer, controller.content)
+			print(" :: synched buffer " .. name)
+		else
+			print(" !! buffer not managed")
+		end
+	end,
+	{ }
 )
 
 vim.api.nvim_create_user_command(

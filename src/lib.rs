@@ -156,10 +156,7 @@ impl LuaUserData for LuaBufferController {
 	}
 
 	fn add_fields<'lua, F: LuaUserDataFields<'lua, Self>>(fields: &mut F) {
-		fields.add_field_method_get("content", |_, this| Ok(
-			this.0.try_recv().map(|x| x.map(|y| y.content))
-				.map_err(LuaCodempError::from)?
-		));
+		fields.add_field_method_get("content", |_, this| Ok(this.0.content()));
 	}
 }
 
