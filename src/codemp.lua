@@ -232,15 +232,17 @@ vim.api.nvim_create_user_command(
 		-- hook serverbound callbacks
 		-- TODO breaks when deleting whole lines at buffer end
 		vim.api.nvim_buf_attach(buffer, false, {
-			on_lines = function (_, buf, tick, firstline, lastline, new_lastline, old_byte_size)
-				if tick <= codemp_changed_tick then return end
-				if buffer_mappings[buf] == nil then return true end -- exit worker
-				local start = vim.api.nvim_buf_get_offset(buf, firstline)
-				local content = table.concat(vim.api.nvim_buf_get_lines(buf, firstline, new_lastline, false), '\n')
-				if start == -1 then start = 0 end
-				if new_lastline < lastline then old_byte_size = old_byte_size + 1 end
-				controller:send(start, start + old_byte_size - 1, content)
-			end
+			on_bytes = function(_, buf, tick, start_row, start_col, start_offset, old_end_row, old_end_col, old_end_byte_len, new_end_row, new_end_col, new_byte_len)
+				if tick <= codemp_changed_tick[buf] then return end
+				if buffer_mappings[buf] == nil then return true end -- unregister callback handler
+				local content = ""
+				if old_end_row < new_end_row and new_byte_len == 1 then
+					content = "\n"
+				else
+					content = table.concat(vim.api.nvim_buf_get_text(buf, start_row, start_col, start_row + new_end_row, start_col + new_byte_len, {}), '\n')
+				end
+				controller:send(start_offset, start_offset + old_end_byte_len, content)
+			end,
 		})
 
 		-- This is an ugly as hell fix: basically we receive all operations real fast at the start
