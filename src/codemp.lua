@@ -1,6 +1,6 @@
 local codemp = require("libcodemp_nvim")
 
-local codemp_changed_tick = 0 -- TODO this doesn't work when events are coalesced
+local codemp_changed_tick = {}
 
 local function register_controller_handler(target, controller, handler, delay)
 	local async = vim.loop.new_async(function()
@@ -227,6 +227,7 @@ vim.api.nvim_create_user_command(
 
 		buffer_mappings[buffer] = args.args
 		buffer_mappings_reverse[args.args] = buffer
+		codemp_changed_tick[buffer] = 0
 
 		-- hook serverbound callbacks
 		-- TODO breaks when deleting whole lines at buffer end
@@ -250,7 +251,7 @@ vim.api.nvim_create_user_command(
 
 		-- hook clientbound callbacks
 		register_controller_handler(args.args, controller, function(event)
-			codemp_changed_tick = vim.api.nvim_buf_get_changedtick(buffer) + 1
+			codemp_changed_tick[buffer] = vim.api.nvim_buf_get_changedtick(buffer)
 			buffer_replace_content(buffer, event.first, event.last, event.content)
 		end, 500) -- delay by 200 ms as ugly fix
 
@@ -261,12 +262,12 @@ vim.api.nvim_create_user_command(
 
 vim.api.nvim_create_user_command(
 	"Sync",
-	function (args)
+	function (_)
 		local buffer = vim.api.nvim_get_current_buf()
 		local name = buffer_mappings[buffer]
 		if name ~= nil then
 			local controller = codemp.get_buffer(name)
-			codemp_changed_tick = vim.api.nvim_buf_get_changedtick(buffer) + 1
+			codemp_changed_tick[buffer] = vim.api.nvim_buf_get_changedtick(buffer)
 			buffer_set_content(buffer, controller.content)
 			print(" :: synched buffer " .. name)
 		else
