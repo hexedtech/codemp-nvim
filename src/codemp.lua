@@ -20,13 +20,13 @@ local function register_controller_handler(target, controller, handler, delay)
 	--  thread and requesting a new reference to the same controller from che global instance
 	-- NOTE variables prefixed with underscore live in another Lua runtime
 	vim.loop.new_thread({}, function(_async, _target, _delay)
-		if _delay ~= nil then vim.loop.sleep(_delay) end
 		local _codemp = require("libcodemp_nvim")
 		local _controller = _target ~= nil and _codemp.get_buffer(_target) or _codemp.get_cursor()
 		while true do
 			local success, _ = pcall(_controller.poll, _controller)
 			if success then
 				_async:send()
+				if _delay ~= nil then vim.loop.sleep(_delay) end
 			else
 				local my_name = "cursor"
 				if _target ~= nil then
@@ -191,7 +191,7 @@ vim.api.nvim_create_user_command(
 					event.position.finish
 				)
 			end
-		end)
+		end, 20)
 
 		print(" ++ joined workspace " .. args.args)
 	end,
@@ -255,7 +255,7 @@ vim.api.nvim_create_user_command(
 		register_controller_handler(args.args, controller, function(event)
 			codemp_changed_tick[buffer] = vim.api.nvim_buf_get_changedtick(buffer)
 			buffer_replace_content(buffer, event.first, event.last, event.content)
-		end, 500) -- delay by 200 ms as ugly fix
+		end, 20) -- wait 20ms before polling again because it overwhelms libuv?
 
 		print(" ++ attached to buffer " .. args.args)
 	end,
