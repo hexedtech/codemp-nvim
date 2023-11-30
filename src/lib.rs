@@ -143,7 +143,7 @@ impl LuaUserData for LuaBufferController {
 			)
 		});
 		methods.add_method("try_recv", |_, this, ()| {
-			match this.0.try_recv() .map_err(LuaCodempError::from)? {
+			match this.0.try_recv().map_err(LuaCodempError::from)? {
 				Some(x) => Ok(Some(LuaTextChange(x))),
 				None => Ok(None),
 			}
@@ -177,6 +177,7 @@ impl LuaUserData for LuaTextChange {
 			}))
 		});
 		methods.add_meta_method(LuaMetaMethod::ToString, |_, this, ()| Ok(format!("{:?}", this.0)));
+		methods.add_method("apply", |_, this, (txt,):(String,)| Ok(this.0.apply(&txt)));
 	}
 }
 
