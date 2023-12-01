@@ -254,7 +254,10 @@ vim.api.nvim_create_user_command(
 		-- hook clientbound callbacks
 		register_controller_handler(args.args, controller, function(event)
 			codemp_changed_tick[buffer] = vim.api.nvim_buf_get_changedtick(buffer)
-			buffer_replace_content(buffer, event.first, event.last, event.content)
+			local before = buffer_get_content(buffer)
+			local after = event:apply(before)
+			buffer_set_content(buffer, after)
+			-- buffer_replace_content(buffer, event.first, event.last, event.content)
 		end, 20) -- wait 20ms before polling again because it overwhelms libuv?
 
 		print(" ++ attached to buffer " .. args.args)
