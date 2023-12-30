@@ -205,6 +205,7 @@ vim.api.nvim_create_user_command(
 		if args.bang then
 			local buf = vim.api.nvim_get_current_buf()
 			content = buffer_get_content(buf)
+			-- TODO send content!
 		end
 		codemp.create(args.args, content)
 
@@ -216,11 +217,17 @@ vim.api.nvim_create_user_command(
 vim.api.nvim_create_user_command(
 	"Attach",
 	function (args)
-		local buffer = vim.api.nvim_create_buf(true, true)
-		vim.api.nvim_buf_set_option(buffer, 'fileformat', 'unix')
-		vim.api.nvim_buf_set_option(buffer, 'filetype', 'codemp')
-		vim.api.nvim_buf_set_name(buffer, "codemp::" .. args.args)
-		vim.api.nvim_set_current_buf(buffer)
+		local buffer = nil
+		if args.bang then
+			buffer = vim.api.nvim_get_current_buf()
+			buffer_set_content(buffer, "")
+		else
+			buffer = vim.api.nvim_create_buf(true, true)
+			vim.api.nvim_buf_set_option(buffer, 'fileformat', 'unix')
+			vim.api.nvim_buf_set_option(buffer, 'filetype', 'codemp')
+			vim.api.nvim_buf_set_name(buffer, "codemp::" .. args.args)
+			vim.api.nvim_set_current_buf(buffer)
+		end
 		local controller = codemp.attach(args.args)
 
 		-- TODO map name to uuid
@@ -262,7 +269,7 @@ vim.api.nvim_create_user_command(
 
 		print(" ++ attached to buffer " .. args.args)
 	end,
-	{ nargs = 1 }
+	{ nargs = 1, bang = true }
 )
 
 vim.api.nvim_create_user_command(
