@@ -1,4 +1,5 @@
 local codemp = require("libcodemp_nvim")
+local active_workspace = nil
 
 local codemp_changed_tick = {}
 
@@ -19,9 +20,10 @@ local function register_controller_handler(target, controller, handler, delay)
 	--  completely useless. We can circumvent this by requiring codemp again in the new 
 	--  thread and requesting a new reference to the same controller from che global instance
 	-- NOTE variables prefixed with underscore live in another Lua runtime
-	vim.loop.new_thread({}, function(_async, _target, _delay)
+	vim.loop.new_thread({}, function(_async, _workspace, _target, _delay)
 		local _codemp = require("libcodemp_nvim")
-		local _controller = _target ~= nil and _codemp.get_buffer(_target) or _codemp.get_cursor()
+		local _ws = _codemp.get_workspace(_workspace)
+		local _controller = _target ~= nil and _ws:get_buffer(_target) or _ws:get_cursor()
 		while true do
 			local success, _ = pcall(_controller.poll, _controller)
 			if success then
@@ -35,7 +37,7 @@ local function register_controller_handler(target, controller, handler, delay)
 				print(" -- stopping " .. my_name .. " controller poller")
 			end
 		end
-	end, async, target, delay)
+	end, async, active_workspace, target, delay)
 end
 
 local function split_without_trim(str, sep)
@@ -146,19 +148,20 @@ local available_colors = { -- TODO these are definitely not portable!
 	"CmpItemKindInterface",
 }
 
-vim.api.nvim_create_user_command(
-	"Connect",
-	function (args)
-		codemp.connect(#args.args > 0 and args.args or nil)
-		print(" ++ connected")
-	end,
-	{ nargs = "?" }
-)
+-- vim.api.nvim_create_user_command(
+-- 	"Connect",
+-- 	function (args)
+-- 		codemp.connect(#args.args > 0 and args.args or nil)
+-- 		print(" ++ connected")
+-- 	end,
+-- 	{ nargs = "?" }
+-- )
 
 vim.api.nvim_create_user_command(
 	"Join",
 	function (args)
-		local controller = codemp.join(args.args)
+		local controller = codemp.join_workspace(args.args)
+		active_workspace = args.args
 
 		-- hook serverbound callbacks
 		vim.api.nvim_create_autocmd({"CursorMoved", "CursorMovedI", "ModeChanged"}, {
@@ -207,7 +210,7 @@ vim.api.nvim_create_user_command(
 			content = buffer_get_content(buf)
 			-- TODO send content!
 		end
-		codemp.create(args.args, content)
+		codemp.get_workspace(active_workspace):create_buffer(args.args, content)
 
 		print(" ++ created buffer " .. args.args)
 	end,
@@ -228,7 +231,7 @@ vim.api.nvim_create_user_command(
 			vim.api.nvim_buf_set_name(buffer, "codemp::" .. args.args)
 			vim.api.nvim_set_current_buf(buffer)
 		end
-		local controller = codemp.attach(args.args)
+		local controller = codemp.get_workspace(active_workspace):attach_buffer(args.args)
 
 		-- TODO map name to uuid
 
@@ -242,13 +245,18 @@ vim.api.nvim_create_user_command(
 			on_bytes = function(_, buf, tick, start_row, start_col, start_offset, old_end_row, old_end_col, old_end_byte_len, new_end_row, new_end_col, new_byte_len)
 				if tick <= codemp_changed_tick[buf] then return end
 				if buffer_mappings[buf] == nil then return true end -- unregister callback handler
-				local content = ""
-				if old_end_row < new_end_row and new_byte_len == 1 then
-					content = "\n"
-				else
-					content = table.concat(vim.api.nvim_buf_get_text(buf, start_row, start_col, start_row + new_end_row, start_col + new_byte_len, {}), '\n')
-				end
-				controller:send(start_offset, start_offset + old_end_byte_len, content)
+				controller:replace(buffer_get_content(buf))
+				-- local content = ""
+				-- if old_end_row < new_end_row and new_byte_len == 1 then
+				-- 	content = "\n"
+				-- else
+				-- 	print(string.format("%s %s %s %s", start_row, start_col, start_row + new_end_row, start_col + new_end_col))
+				-- 	content = table.concat(vim.api.nvim_buf_get_text(buf, start_row - 1, start_col, start_row + new_end_row - 1, start_col + new_end_col, {}), '\n')
+				-- end
+				-- if old_end_row < new_end_row then
+				-- 	start_offset = start_offset - 1
+				-- end
+				-- controller:send(start_offset, start_offset + old_end_byte_len, content)
 			end,
 		})
 
@@ -278,7 +286,7 @@ vim.api.nvim_create_user_command(
 		local buffer = vim.api.nvim_get_current_buf()
 		local name = buffer_mappings[buffer]
 		if name ~= nil then
-			local controller = codemp.get_buffer(name)
+			local controller = codemp.get_workspace(active_workspace):get_buffer(name)
 			codemp_changed_tick[buffer] = vim.api.nvim_buf_get_changedtick(buffer)
 			buffer_set_content(buffer, controller.content)
 			print(" :: synched buffer " .. name)
@@ -297,7 +305,7 @@ vim.api.nvim_create_user_command(
 		local name = buffer_mappings[buffer]
 		buffer_mappings[buffer] = nil
 		buffer_mappings_reverse[name] = nil
-		codemp.disconnect_buffer(name)
+		codemp.get_workspace(active_workspace):disconnect_buffer(name)
 		vim.api.nvim_buf_delete(buffer, {})
 		print(" -- detached from buffer " .. name)
 	end,
