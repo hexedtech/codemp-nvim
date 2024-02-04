@@ -9,12 +9,35 @@ use tokio::sync::RwLock;
 
 lazy_static::lazy_static!{
 	// TODO use a runtime::Builder::new_current_thread() runtime to not behave like malware
-	static ref RT : Runtime = Runtime::new().expect("could not instantiate tokio runtime");
-	static ref CODEMP : RwLock<CodempClient> = RwLock::new(RT.block_on(CodempClient::new(
-		&std::env::var("CODEMP_BASE_HOST").unwrap_or("http://codemp.alemi.dev:50051".to_string())
-	)).expect("could not connect to codemp servers"));
+	static ref STATE : GlobalState = GlobalState::default();
 }
 
+struct GlobalState {
+	client: std::sync::RwLock<CodempClient>,
+	runtime: Runtime,
+}
+
+impl Default for GlobalState {
+	fn default() -> Self {
+		let rt = Runtime::new().expect("could not create tokio runtime");
+		let client = rt.block_on(CodempClient::new("http://codemp.alemi.dev:50053")).expect("could not connect to codemp servers");
+		GlobalState { client: std::sync::RwLock::new(client), runtime: rt }
+	}
+}
+
+impl GlobalState {
+	fn client(&self) -> std::sync::RwLockReadGuard<CodempClient> {
+		self.client.read().unwrap()
+	}
+
+	fn client_mut(&self) -> std::sync::RwLockWriteGuard<CodempClient> {
+		self.client.write().unwrap()
+	}
+
+	fn rt(&self) -> &Runtime {
+		&self.runtime
+	}
+}
 
 #[derive(Debug, thiserror::Error, derive_more::From, derive_more::Display)]
 struct LuaCodempError(CodempError);
@@ -33,20 +56,21 @@ fn make_cursor(buffer: String, start_row: i32, start_col: i32, end_row: i32, end
 }
 
 fn id(_: &Lua, (): ()) -> LuaResult<String> {
-	Ok(CODEMP.blocking_read().user_id().to_string())
+	Ok(STATE.client().user_id().to_string())
 }
 
 
 /// join a remote workspace and start processing cursor events
 fn join_workspace(_: &Lua, (session,): (String,)) -> LuaResult<LuaCursorController> {
-	let ws = RT.block_on(async { CODEMP.write().await.join_workspace(&session).await })
+	tracing::info!("joining workspace {}", session);
+	let ws = STATE.rt().block_on(async { STATE.client_mut().join_workspace(&session).await })
 		.map_err(LuaCodempError::from)?;
-	let cursor = ws.blocking_read().cursor().clone();
-	Ok(LuaCursorController(cursor))
+	let cursor = STATE.rt().block_on(async { ws.read().await.cursor() });
+	Ok(cursor.into())
 }
 
 fn get_workspace(_: &Lua, (session,): (String,)) -> LuaResult<Option<LuaWorkspace>> {
-	Ok(CODEMP.blocking_read().workspaces.get(&session).cloned().map(LuaWorkspace))
+	Ok(STATE.client().workspaces.get(&session).cloned().map(LuaWorkspace))
 }
 
 #[derive(Debug, derive_more::From)]
@@ -58,22 +82,22 @@ struct LuaWorkspace(Arc<RwLock<CodempWorkspace>>);
 impl LuaUserData for LuaWorkspace {
 	fn add_methods<'lua, M: LuaUserDataMethods<'lua, Self>>(methods: &mut M) {
 		methods.add_method("create_buffer", |_, this, (name,):(String,)| {
-			Ok(RT.block_on(async { this.0.write().await.create(&name).await }).map_err(LuaCodempError::from)?)
+			Ok(STATE.rt().block_on(async { this.0.write().await.create(&name).await }).map_err(LuaCodempError::from)?)
 		});
 
 		methods.add_method("attach_buffer", |_, this, (name,):(String,)| {
-			Ok(LuaBufferController(RT.block_on(async { this.0.write().await.attach(&name).await }).map_err(LuaCodempError::from)?))
+			Ok(LuaBufferController(STATE.rt().block_on(async { this.0.write().await.attach(&name).await }).map_err(LuaCodempError::from)?))
 		});
 
 		// TODO disconnect_buffer
 		// TODO leave_workspace:w
 
-		methods.add_method("get_buffer", |_, this, (name,):(String,)| Ok(RT.block_on(async { this.0.read().await.buffer_by_name(&name) }).map(|x| LuaBufferController(x))));
+		methods.add_method("get_buffer", |_, this, (name,):(String,)| Ok(STATE.rt().block_on(async { this.0.read().await.buffer_by_name(&name) }).map(LuaBufferController)));
 	}
 
 	fn add_fields<'lua, F: LuaUserDataFields<'lua, Self>>(fields: &mut F) {
-		fields.add_field_method_get("cursor", |_, this| Ok(LuaCursorController(RT.block_on(async { this.0.read().await.cursor() }))));
-		fields.add_field_method_get("filetree", |_, this| Ok(RT.block_on(async { this.0.read().await.filetree() })));
+		fields.add_field_method_get("cursor", |_, this| Ok(LuaCursorController(STATE.rt().block_on(async { this.0.read().await.cursor() }))));
+		fields.add_field_method_get("filetree", |_, this| Ok(STATE.rt().block_on(async { this.0.read().await.filetree() })));
 		// methods.add_method("users", |_, this| Ok(this.0.users())); // TODO
 	}
 }
@@ -95,7 +119,7 @@ impl LuaUserData for LuaCursorController {
 			}
 		});
 		methods.add_method("poll", |_, this, ()| {
-			RT.block_on(this.0.poll())
+			STATE.rt().block_on(this.0.poll())
 					.map_err(LuaCodempError::from)?;
 			Ok(())
 		});
@@ -147,7 +171,7 @@ impl LuaUserData for LuaBufferController {
 			}
 		});
 		methods.add_method("poll", |_, this, ()| {
-			RT.block_on(this.0.poll())
+			STATE.rt().block_on(this.0.poll())
 					.map_err(LuaCodempError::from)?;
 			Ok(())
 		});
@@ -255,3 +279,5 @@ fn libcodemp_nvim(lua: &Lua) -> LuaResult<LuaTable> {
 
 	Ok(exports)
 }
+
+
