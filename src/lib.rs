@@ -2,10 +2,10 @@ use std::io::Write;
 use std::sync::{mpsc, Arc, Mutex};
 
 use codemp::prelude::*;
+use codemp::proto::files::BufferNode;
 use codemp::woot::crdt::Op;
 use mlua::prelude::*;
 use tokio::runtime::Runtime;
-use tokio::sync::RwLock;
 
 lazy_static::lazy_static!{
 	// TODO use a runtime::Builder::new_current_thread() runtime to not behave like malware
@@ -51,7 +51,7 @@ impl From::<LuaCodempError> for LuaError {
 // TODO put friendlier constructor directly in lib?
 fn make_cursor(buffer: String, start_row: i32, start_col: i32, end_row: i32, end_col: i32) -> CodempCursorPosition {
 	CodempCursorPosition {
-		buffer, start: CodempRowCol { row: start_row, col: start_col}, end: CodempRowCol { row: end_row, col: end_col },
+		buffer: BufferNode::from(buffer), start: CodempRowCol { row: start_row, col: start_col}, end: CodempRowCol { row: end_row, col: end_col },
 	}
 }
 
@@ -65,12 +65,16 @@ fn join_workspace(_: &Lua, (session,): (String,)) -> LuaResult<LuaCursorControll
 	tracing::info!("joining workspace {}", session);
 	let ws = STATE.rt().block_on(async { STATE.client_mut().join_workspace(&session).await })
 		.map_err(LuaCodempError::from)?;
-	let cursor = STATE.rt().block_on(async { ws.read().await.cursor() });
+	let cursor = ws.cursor();
 	Ok(cursor.into())
 }
 
+fn login(_: &Lua, (username, password, workspace_id):(String, String, String)) -> LuaResult<()> {
+	Ok(STATE.rt().block_on(STATE.client().login(username, password, Some(workspace_id))).map_err(LuaCodempError::from)?)
+}
+
 fn get_workspace(_: &Lua, (session,): (String,)) -> LuaResult<Option<LuaWorkspace>> {
-	Ok(STATE.client().workspaces.get(&session).cloned().map(LuaWorkspace))
+	Ok(STATE.client().get_workspace(&session).map(LuaWorkspace))
 }
 
 #[derive(Debug, derive_more::From)]
@@ -78,26 +82,26 @@ struct LuaOp(Op);
 impl LuaUserData for LuaOp { }
 
 #[derive(derive_more::From)]
-struct LuaWorkspace(Arc<RwLock<CodempWorkspace>>);
+struct LuaWorkspace(Arc<CodempWorkspace>);
 impl LuaUserData for LuaWorkspace {
 	fn add_methods<'lua, M: LuaUserDataMethods<'lua, Self>>(methods: &mut M) {
 		methods.add_method("create_buffer", |_, this, (name,):(String,)| {
-			Ok(STATE.rt().block_on(async { this.0.write().await.create(&name).await }).map_err(LuaCodempError::from)?)
+			Ok(STATE.rt().block_on(async { this.0.create(&name).await }).map_err(LuaCodempError::from)?)
 		});
 
 		methods.add_method("attach_buffer", |_, this, (name,):(String,)| {
-			Ok(LuaBufferController(STATE.rt().block_on(async { this.0.write().await.attach(&name).await }).map_err(LuaCodempError::from)?))
+			Ok(LuaBufferController(STATE.rt().block_on(async { this.0.attach(&name).await }).map_err(LuaCodempError::from)?))
 		});
 
 		// TODO disconnect_buffer
 		// TODO leave_workspace:w
 
-		methods.add_method("get_buffer", |_, this, (name,):(String,)| Ok(STATE.rt().block_on(async { this.0.read().await.buffer_by_name(&name) }).map(LuaBufferController)));
+		methods.add_method("get_buffer", |_, this, (name,):(String,)| Ok(this.0.buffer_by_name(&name).map(LuaBufferController)));
 	}
 
 	fn add_fields<'lua, F: LuaUserDataFields<'lua, Self>>(fields: &mut F) {
-		fields.add_field_method_get("cursor", |_, this| Ok(LuaCursorController(STATE.rt().block_on(async { this.0.read().await.cursor() }))));
-		fields.add_field_method_get("filetree", |_, this| Ok(STATE.rt().block_on(async { this.0.read().await.filetree() })));
+		fields.add_field_method_get("cursor", |_, this| Ok(LuaCursorController(this.0.cursor())));
+		fields.add_field_method_get("filetree", |_, this| Ok(this.0.filetree()));
 		// methods.add_method("users", |_, this| Ok(this.0.users())); // TODO
 	}
 }
@@ -141,7 +145,7 @@ impl LuaUserData for LuaCursorEvent {
 struct LuaCursorPosition(CodempCursorPosition);
 impl LuaUserData for LuaCursorPosition {
 	fn add_fields<'lua, F: LuaUserDataFields<'lua, Self>>(fields: &mut F) {
-		fields.add_field_method_get("buffer", |_, this| Ok(this.0.buffer.clone()));
+		fields.add_field_method_get("buffer", |_, this| Ok(this.0.buffer.path.clone()));
 		fields.add_field_method_get("start",  |_, this| Ok(LuaRowCol(this.0.start.clone())));
 		fields.add_field_method_get("finish", |_, this| Ok(LuaRowCol(this.0.end.clone())));
 	}
@@ -270,6 +274,7 @@ fn libcodemp_nvim(lua: &Lua) -> LuaResult<LuaTable> {
 	let exports = lua.create_table()?;
 
 	// core proto functions
+	exports.set("login", lua.create_function(login)?)?;
 	exports.set("join_workspace", lua.create_function(join_workspace)?)?;
 	// state helpers
 	exports.set("get_workspace", lua.create_function(get_workspace)?)?;

@@ -23,7 +23,7 @@ local function register_controller_handler(target, controller, handler, delay)
 	vim.loop.new_thread({}, function(_async, _workspace, _target, _delay)
 		local _codemp = require("libcodemp_nvim")
 		local _ws = _codemp.get_workspace(_workspace)
-		local _controller = _target ~= nil and _ws:get_buffer(_target) or _ws:get_cursor()
+		local _controller = _target ~= nil and _ws:get_buffer(_target) or _ws.cursor
 		while true do
 			local success, _ = pcall(_controller.poll, _controller)
 			if success then
@@ -35,6 +35,7 @@ local function register_controller_handler(target, controller, handler, delay)
 					my_name = "buffer(" .. _target .. ")"
 				end
 				print(" -- stopping " .. my_name .. " controller poller")
+				break
 			end
 		end
 	end, async, active_workspace, target, delay)
@@ -158,6 +159,15 @@ local available_colors = { -- TODO these are definitely not portable!
 -- )
 
 vim.api.nvim_create_user_command(
+	"Login",
+	function (args)
+		codemp.login(args.fargs[1], args.fargs[2], args.fargs[3])
+		print(" ++ logged in " .. args.args)
+	end,
+	{ nargs = "+" }
+)
+
+vim.api.nvim_create_user_command(
 	"Join",
 	function (args)
 		local controller = codemp.join_workspace(args.args)
@@ -245,7 +255,9 @@ vim.api.nvim_create_user_command(
 			on_bytes = function(_, buf, tick, start_row, start_col, start_offset, old_end_row, old_end_col, old_end_byte_len, new_end_row, new_end_col, new_byte_len)
 				if tick <= codemp_changed_tick[buf] then return end
 				if buffer_mappings[buf] == nil then return true end -- unregister callback handler
-				controller:replace(buffer_get_content(buf))
+				local text = buffer_get_content(buf)
+				print(string.format("CRDT content: %s", controller.content))
+				controller:send(0, #controller.content, text)
 				-- local content = ""
 				-- if old_end_row < new_end_row and new_byte_len == 1 then
 				-- 	content = "\n"
@@ -268,7 +280,7 @@ vim.api.nvim_create_user_command(
 
 		-- hook clientbound callbacks
 		register_controller_handler(args.args, controller, function(event)
-			codemp_changed_tick[buffer] = vim.api.nvim_buf_get_changedtick(buffer)
+			codemp_changed_tick[buffer] = vim.api.nvim_buf_get_changedtick(buffer) + 1
 			local before = buffer_get_content(buffer)
 			local after = event:apply(before)
 			buffer_set_content(buffer, after)
@@ -287,7 +299,7 @@ vim.api.nvim_create_user_command(
 		local name = buffer_mappings[buffer]
 		if name ~= nil then
 			local controller = codemp.get_workspace(active_workspace):get_buffer(name)
-			codemp_changed_tick[buffer] = vim.api.nvim_buf_get_changedtick(buffer)
+			codemp_changed_tick[buffer] = vim.api.nvim_buf_get_changedtick(buffer) + 1
 			buffer_set_content(buffer, controller.content)
 			print(" :: synched buffer " .. name)
 		else
