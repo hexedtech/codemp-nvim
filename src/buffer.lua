@@ -1,4 +1,4 @@
-local native = require('codemp.loader')()
+local native = require('codemp.loader').load()
 
 local utils = require('codemp.utils')
 local async = require('codemp.async')

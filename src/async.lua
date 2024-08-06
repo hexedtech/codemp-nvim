@@ -21,7 +21,7 @@ local function register_controller_handler(workspace, target, controller, handle
 	--  thread and requesting a new reference to the same controller from che global instance
 	-- NOTE variables prefixed with underscore live in another Lua runtime
 	vim.loop.new_thread({}, function(_async, _workspace, _target, _delay)
-		local _codemp = require("codemp.loader")() -- TODO maybe make a native.load() idk
+		local _codemp = require("codemp.loader").load() -- TODO maybe make a native.load() idk
 		local _ws = _codemp.get_workspace(_workspace)
 		local _controller = _target ~= nil and _ws:get_buffer(_target) or _ws.cursor
 		while true do

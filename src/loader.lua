@@ -1,6 +1,5 @@
--- TODO check for platform? download it? check for updates?
-local function loader()
-	return require("libcodemp")
-end
-
-return loader
+return {
+	load = function ()
+		return require("codemp.native")
+	end
+}

@@ -1,4 +1,4 @@
-local native = require('codemp.loader')()
+local native = require('codemp.loader').load()
 
 local utils = require('codemp.utils')
 local buffers = require('codemp.buffer')
@@ -64,14 +64,14 @@ end
 
 local function list_users(workspace)
 	local workspace = native.get_workspace(workspace)
-	for _, buffer in ipairs(workspace.users) do
+	for _, buffer in pairs(workspace.users) do
 		print(" - " .. buffer)
 	end
 end
 
 local function list_buffers(workspace)
 	local workspace = native.get_workspace(workspace)
-	for _, buffer in ipairs(workspace.filetree) do
+	for _, buffer in pairs(workspace.filetree) do
 		print(" > " .. buffer)
 	end
 end
