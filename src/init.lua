@@ -36,7 +36,7 @@ vim.loop.new_thread({}, function()
 	end
 end)
 
-local command = require('codemp.command')
+require('codemp.command')
 
 return {
 	native = native,
