@@ -70,10 +70,7 @@ local function list_users(workspace)
 end
 
 local function list_buffers(workspace)
-	local workspace = native.get_workspace(workspace)
-	for _, buffer in pairs(workspace.filetree) do
-		print(" > " .. buffer)
-	end
+	return native.get_workspace(workspace).filetree
 end
 
 return {
