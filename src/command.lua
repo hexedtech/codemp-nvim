@@ -41,6 +41,8 @@ vim.api.nvim_create_user_command(
 		elseif args.fargs[1] == "buffers" then
 			if client.workspace == nil then error("connect to a workspace first") end
 			workspace.open_buffer_tree(client.workspace)
+		elseif args.fargs[1] == "id" then
+			print(" ::codemp#" .. native.id())
 		-- elseif args.fargs[1] == "users" then
 		-- 	if client.workspace == nil then error("connect to a workspace first") end
 		-- 	workspace.users(client.workspace)
