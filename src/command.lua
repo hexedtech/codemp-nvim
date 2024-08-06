@@ -1,5 +1,5 @@
 local client = require('codemp.client')
-local buffers = require('codemp.buffer')
+local buffers = require('codemp.buffers')
 local workspace = require('codemp.workspace')
 local utils = require('codemp.utils')
 

@@ -1,7 +1,7 @@
 local native = require('codemp.loader').load()
 
 local utils = require('codemp.utils')
-local buffers = require('codemp.buffer')
+local buffers = require('codemp.buffers')
 local async = require('codemp.async')
 
 local user_hl = {}

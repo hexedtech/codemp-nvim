@@ -41,7 +41,7 @@ local command = require('codemp.command')
 return {
 	native = native,
 	client = require('codemp.client'),
-	buffers = require('codemp.buffer'),
+	buffers = require('codemp.buffers'),
 	workspace = require('codemp.workspace'),
 	utils = require('codemp.utils'),
 	async = require('codemp.async'),
