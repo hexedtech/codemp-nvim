@@ -28,9 +28,10 @@ local native = require('codemp.loader').load() -- make sure we can load the nati
 -- TODO nvim docs say that we should stop all threads before exiting nvim
 --  but we like to live dangerously (:
 vim.loop.new_thread({}, function()
-	vim.loop.sleep(500) -- sleep a bit leaving user config time to override logger opts
+	vim.loop.sleep(1000) -- allow user to setup their own logger options
 	local _codemp = require('codemp.loader').load()
-	local logger = _codemp.setup_tracing()
+	_codemp.setup_logger()
+	local logger = _codemp.get_logger()
 	while true do
 		print(logger:recv())
 	end
