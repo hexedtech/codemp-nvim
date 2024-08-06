@@ -1,5 +1,5 @@
 return {
 	load = function ()
-		return require("codemp.native")
+		return require("codemp_lua")
 	end
 }
