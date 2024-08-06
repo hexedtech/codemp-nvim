@@ -15,8 +15,6 @@ local function filter(needle, haystack)
 	return hints
 end
 
-local tree_buf = nil;
-
 vim.api.nvim_create_user_command(
 	"MP",
 	function (args)
@@ -39,19 +37,7 @@ vim.api.nvim_create_user_command(
 			buffers.sync(client.workspace)
 		elseif args.fargs[1] == "buffers" then
 			if client.workspace == nil then error("connect to a workspace first") end
-			local tree = workspace.buffers(client.workspace)
-			if tree_buf == nil then
-				tree_buf = vim.api.nvim_create_buf(false, true)
-				vim.api.nvim_buf_set_name(tree_buf, "codemp::" .. client.workspace)
-				vim.api.nvim_set_option_value('buftype', 'nofile', { buf = tree_buf })
-				vim.api.nvim_set_option_value('nomodifiable', true, { buf = tree_buf })
-			end
-			utils.buffer.set_content(tree_buf, "> " .. vim.fn.join(tree, "\n> "))
-			vim.api.nvim_open_win(tree_buf, true, {
-				win = 0,
-				split = 'left',
-				width = 20,
-			})
+			workspace.open_buffer_tree(client.workspace)
 		-- elseif args.fargs[1] == "users" then
 		-- 	if client.workspace == nil then error("connect to a workspace first") end
 		-- 	workspace.users(client.workspace)

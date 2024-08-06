@@ -5,6 +5,7 @@ local buffers = require('codemp.buffers')
 local async = require('codemp.async')
 
 local user_hl = {}
+local tree_buf = nil
 local available_colors = { -- TODO these are definitely not portable!
 	"ErrorMsg",
 	"WarningMsg",
@@ -62,22 +63,31 @@ local function leave()
 	print(" -- left workspace")
 end
 
-local function list_users(workspace)
-	local workspace = native.get_workspace(workspace)
-	for _, buffer in pairs(workspace.users) do
-		print(" - " .. buffer)
+local function open_buffer_tree(workspace)
+	local tree = native.get_workspace(workspace).filetree
+	if tree_buf == nil then
+		tree_buf = vim.api.nvim_create_buf(false, true)
+		vim.api.nvim_buf_set_name(tree_buf, "codemp::" .. workspace)
+		vim.api.nvim_set_option_value('buftype', 'nofile', { buf = tree_buf })
 	end
-end
-
-local function list_buffers(workspace)
-	return native.get_workspace(workspace).filetree
+	vim.api.nvim_set_option_value('modifiable', true, { buf = tree_buf })
+	utils.buffer.set_content(tree_buf, "codemp::" .. workspace .. "\n\n- " .. vim.fn.join(tree, "\n- "))
+	vim.api.nvim_set_option_value('modifiable', false, { buf = tree_buf })
+	vim.api.nvim_open_win(tree_buf, true, {
+		win = 0,
+		split = 'left',
+		width = 20,
+	})
+	vim.api.nvim_set_option_value('relativenumber', false, {})
+	vim.api.nvim_set_option_value('number', false, {})
+	vim.api.nvim_set_option_value('cursorlineopt', 'line', {})
 end
 
 return {
 	join = join,
 	leave = leave,
-	buffers = list_buffers,
-	users = list_users,
 	map = user_hl,
 	colors = available_colors,
+	open_buffer_tree = open_buffer_tree,
+	buffer_tree = tree_buf,
 }
