@@ -5,6 +5,7 @@ local buffers = require('codemp.buffers')
 local async = require('codemp.async')
 
 local user_hl = {}
+local user_buffer = {}
 local tree_buf = nil
 local available_colors = { -- TODO these are definitely not portable!
 	"ErrorMsg",
@@ -37,6 +38,7 @@ local function register_cursor_handler(controller, workspace)
 				hi = available_colors[ math.random( #available_colors ) ],
 			}
 		end
+		user_buffer[event.user] = event.buffer
 		local buffer = buffers.map_rev[event.position.buffer]
 		if buffer ~= nil then
 			vim.api.nvim_buf_clear_namespace(buffer, user_hl[event.user].ns, 0, -1)
@@ -88,6 +90,7 @@ return {
 	leave = leave,
 	map = user_hl,
 	colors = available_colors,
+	positions = user_buffer,
 	open_buffer_tree = open_buffer_tree,
 	buffer_tree = tree_buf,
 }
