@@ -19,7 +19,10 @@ vim.api.nvim_create_user_command(
 	"MP",
 	function (args)
 		if args.fargs[1] == "login" then
-			client.login(args.fargs[2], args.fargs[3], args.fargs[4])
+			if #args.fargs < 2 then error("missing workspace name") end
+			local user = vim.fn.input("username > ", "user-" .. vim.fn.rand() % 1024)
+			local password = vim.fn.input("password > ", "lmaodefaultpassword")
+			client.login(user, password, args.fargs[2])
 		elseif args.fargs[1] == "create" then
 			if #args.fargs < 2 then error("missing buffer name") end
 			if client.workspace == nil then error("connect to a workspace first") end
