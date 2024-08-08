@@ -11,6 +11,11 @@ local function create(name, content)
 	print(" ++ created buffer '" .. name .. "' on " .. state.workspace)
 end
 
+local function delete(name)
+	state.client:get_workspace(state.workspace):delete_buffer(name)
+	print(" -- deleted buffer " .. name)
+end
+
 local function attach(name, force)
 	local buffer = nil
 	if force then
@@ -23,7 +28,7 @@ local function attach(name, force)
 		vim.api.nvim_buf_set_name(buffer, "codemp::" .. name)
 		vim.api.nvim_set_current_buf(buffer)
 	end
-	local controller = state.client:get_workspace(state.workspace):attach_buffer(name)
+	local controller = state.client:get_workspace(state.workspace):attach(name)
 
 	-- TODO map name to uuid
 
@@ -70,7 +75,7 @@ local function detach(name)
 	local buffer = buffer_id_map[name]
 	id_buffer_map[buffer] = nil
 	buffer_id_map[name] = nil
-	state.client:get_workspace(state.workspace):disconnect_buffer(name)
+	state.client:get_workspace(state.workspace):detach(name)
 	vim.api.nvim_buf_delete(buffer, {})
 
 	print(" -- detached from buffer " .. name)
@@ -92,6 +97,7 @@ end
 
 return {
 	create = create,
+	delete = delete,
 	sync = sync,
 	attach = attach,
 	detach = detach,

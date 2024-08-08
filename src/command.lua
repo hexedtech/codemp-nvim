@@ -37,6 +37,12 @@ local connected_actions = {
 		workspace.join(ws)
 		print(" >< joined workspace " .. ws)
 	end,
+
+	disconnect = function()
+		print(" xx disconnecting client " .. state.client.id)
+		native.close_client(state.client.id)
+		state.client = nil
+	end,
 }
 
 -- only available if state.workspace is not nil
@@ -44,6 +50,11 @@ local joined_actions = {
 	create = function(path)
 		if path == nil then error("missing buffer name") end
 		buffers.create(path)
+	end,
+
+	delete = function(path)
+		if path == nil then error("missing buffer name") end
+		buffers.delete(path)
 	end,
 
 	buffers = function()
@@ -59,6 +70,15 @@ local joined_actions = {
 		buffers.attach(path, bang)
 	end,
 
+	detach = function(path)
+		if path == nil then error("missing buffer name") end
+		buffers.detach(path)
+	end,
+
+	leave = function(ws)
+		if ws == nil then error("missing workspace to leave") end
+		state.client:leave_workspace(ws)
+	end,
 }
 
 vim.api.nvim_create_user_command(
