@@ -3,6 +3,7 @@ local native = require('codemp.loader').load()
 local utils = require('codemp.utils')
 local buffers = require('codemp.buffers')
 local async = require('codemp.async')
+local state = require('codemp.state')
 
 local user_hl = {}
 local user_buffer = {}
@@ -17,12 +18,12 @@ local available_colors = { -- TODO these are definitely not portable!
 	"CmpItemKindInterface",
 }
 
-local function register_cursor_callback(controller, workspace, buffer)
+local function register_cursor_callback(controller)
 	vim.api.nvim_create_autocmd({"CursorMoved", "CursorMovedI", "ModeChanged"}, {
-		group = vim.api.nvim_create_augroup("codemp-workspace-" .. workspace, { clear = true }),
+		group = vim.api.nvim_create_augroup("codemp-workspace-" .. state.workspace, { clear = true }),
 		callback = function (_)
 			local cur = utils.cursor.position()
-			local buf = buffer or vim.api.nvim_get_current_buf()
+			local buf = vim.api.nvim_get_current_buf()
 			if buffers.map[buf] ~= nil then
 				controller:send(buffers.map[buf], cur[1][1], cur[1][2], cur[2][1], cur[2][2])
 			end
@@ -30,8 +31,8 @@ local function register_cursor_callback(controller, workspace, buffer)
 	})
 end
 
-local function register_cursor_handler(controller, workspace)
-	async.handler(workspace, nil, controller, function(event)
+local function register_cursor_handler(controller)
+	async.handler(nil, controller, function(event)
 		if user_hl[event.user] == nil then
 			user_hl[event.user] = {
 				ns = vim.api.nvim_create_namespace("codemp-cursor-" .. event.user),
@@ -54,10 +55,9 @@ local function register_cursor_handler(controller, workspace)
 end
 
 local function join(workspace)
-	local controller = native.join_workspace(workspace)
-	register_cursor_callback(controller, workspace)
-	register_cursor_handler(controller, workspace)
-	print(" ++ joined workspace " .. workspace)
+	local controller = state.client:join_workspace(workspace)
+	register_cursor_callback(controller)
+	register_cursor_handler(controller)
 end
 
 local function leave()
@@ -65,15 +65,15 @@ local function leave()
 	print(" -- left workspace")
 end
 
-local function open_buffer_tree(workspace)
-	local tree = native.get_workspace(workspace).filetree
+local function open_buffer_tree()
+	local tree = state.client:get_workspace(state.workspace).filetree
 	if tree_buf == nil then
 		tree_buf = vim.api.nvim_create_buf(false, true)
-		vim.api.nvim_buf_set_name(tree_buf, "codemp::" .. workspace)
+		vim.api.nvim_buf_set_name(tree_buf, "codemp::" .. state.workspace)
 		vim.api.nvim_set_option_value('buftype', 'nofile', { buf = tree_buf })
 	end
 	vim.api.nvim_set_option_value('modifiable', true, { buf = tree_buf })
-	utils.buffer.set_content(tree_buf, "codemp::" .. workspace .. "\n\n- " .. vim.fn.join(tree, "\n- "))
+	utils.buffer.set_content(tree_buf, "codemp::" .. state.workspace .. "\n\n- " .. vim.fn.join(tree, "\n- "))
 	vim.api.nvim_set_option_value('modifiable', false, { buf = tree_buf })
 	vim.api.nvim_open_win(tree_buf, true, {
 		win = 0,

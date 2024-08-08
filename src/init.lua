@@ -24,6 +24,21 @@ end
 -- end
 
 local native = require('codemp.loader').load() -- make sure we can load the native library correctly, otherwise no point going forward
+local state = require('codemp.state')
+native.runtime_drive_forever() -- spawn thread to drive tokio runtime
+
+vim.api.nvim_create_autocmd(
+	{"ExitPre"},
+	{
+		callback = function (ev)
+			if state.client ~= nil then
+				print(" xx disconnecting codemp client")
+				native.close_client(state.client.id)
+				state.client = nil
+			end
+		end
+	}
+)
 
 -- TODO nvim docs say that we should stop all threads before exiting nvim
 --  but we like to live dangerously (:
@@ -41,7 +56,7 @@ require('codemp.command')
 
 return {
 	native = native,
-	client = require('codemp.client'),
+	state = require('codemp.state'),
 	buffers = require('codemp.buffers'),
 	workspace = require('codemp.workspace'),
 	utils = require('codemp.utils'),

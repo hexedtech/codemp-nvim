@@ -1,7 +1,6 @@
-local client = require('codemp.client')
+local state = require('codemp.state')
 local buffers = require('codemp.buffers')
 local workspace = require('codemp.workspace')
-local utils = require('codemp.utils')
 
 local native = require('codemp.loader').load()
 
@@ -15,48 +14,75 @@ local function filter(needle, haystack)
 	return hints
 end
 
+-- always available
+local base_actions = {
+	connect = function(host)
+		if host == nil then host = 'http://codemp.alemi.dev:50053' end
+		local user = vim.fn.input("username > ", "user-" .. vim.fn.rand() % 1024)
+		local password = vim.fn.input("password > ", "lmaodefaultpassword")
+		state.client = native.connect(host, user, password)
+		print(" ++ connected to " .. host .. " as " .. user)
+	end,
+}
+
+-- only available if state.client is not nil
+local connected_actions = {
+	id = function()
+		print(" ::codemp#" .. state.client.id)
+	end,
+
+	join = function(ws)
+		if ws == nil then error("missing workspace name") end
+		state.workspace = ws
+		workspace.join(ws)
+		print(" >< joined workspace " .. ws)
+	end,
+}
+
+-- only available if state.workspace is not nil
+local joined_actions = {
+	create = function(path)
+		if path == nil then error("missing buffer name") end
+		buffers.create(path)
+	end,
+
+	buffers = function()
+		workspace.open_buffer_tree()
+	end,
+
+	sync = function()
+		buffers.sync()
+	end,
+
+	attach = function(path, bang)
+		if path == nil then error("missing buffer name") end
+		buffers.attach(path, bang)
+	end,
+
+}
+
 vim.api.nvim_create_user_command(
 	"MP",
 	function (args)
-		if args.fargs[1] == "login" then
-			if #args.fargs < 2 then error("missing workspace name") end
-			local user = vim.fn.input("username > ", "user-" .. vim.fn.rand() % 1024)
-			local password = vim.fn.input("password > ", "lmaodefaultpassword")
-			client.login(user, password, args.fargs[2])
-		elseif args.fargs[1] == "create" then
-			if #args.fargs < 2 then error("missing buffer name") end
-			if client.workspace == nil then error("connect to a workspace first") end
-			buffers.create(client.workspace, args.fargs[2])
-		elseif args.fargs[1] == "join" then
-			if #args.fargs < 2 then error("missing workspace name") end
-			client.workspace = args.fargs[2]
-			workspace.join(client.workspace)
-		elseif args.fargs[1] == "attach" then
-			if #args.fargs < 2 then error("missing buffer name") end
-			if client.workspace == nil then error("connect to a workspace first") end
-			buffers.attach(client.workspace, args.fargs[2], args.bang)
-		elseif args.fargs[1] == "sync" then
-			if client.workspace == nil then error("connect to a workspace first") end
-			buffers.sync(client.workspace)
-		elseif args.fargs[1] == "buffers" then
-			if client.workspace == nil then error("connect to a workspace first") end
-			workspace.open_buffer_tree(client.workspace)
-		elseif args.fargs[1] == "id" then
-			print(" ::codemp#" .. native.id())
-		-- elseif args.fargs[1] == "users" then
-		-- 	if client.workspace == nil then error("connect to a workspace first") end
-		-- 	workspace.users(client.workspace)
-		-- elseif args.fargs[1] == "detach" then
-		-- 	if #args.fargs < 2 then error("missing buffer name") end
-		-- 	if client.workspace == nil then error("connect to a workspace first") end
-		-- 	buffers.detach(client.workspace, args.fargs[2])
-		-- elseif args.fargs[1] == "leave" then
-		-- 	if client.workspace == nil then error("connect to a workspace first") end
-		-- 	workspace.leave()
-		-- 	client.workspace = nil
+		local action = args.fargs[1]
+		local fn = nil
+
+		if base_actions[action] ~= nil then
+			fn = base_actions[action]
 		end
-		if args.bang then
-			print("pls stop shouting :'c")
+
+		if state.client ~= nil and connected_actions[action] ~= nil then
+			fn = connected_actions[action]
+		end
+
+		if state.workspace ~= nil and joined_actions[action] ~= nil then
+			fn = joined_actions[action]
+		end
+
+		if fn ~= nil then
+			fn(args.fargs[2], args.bang)
+		else
+			print(" ?? invalid command")
 		end
 	end,
 	{
@@ -69,11 +95,29 @@ vim.api.nvim_create_user_command(
 			if stage == 1 then
 				return { "MP" }
 			elseif stage == 2 then
-				return filter(lead, {'login', 'create', 'join', 'attach', 'sync', 'buffers', 'users', 'detach', 'leave'})
+				local suggestions = {}
+				local n = 0
+				for sugg, _ in pairs(base_actions) do
+					n = n + 1
+					suggestions[n] = sugg
+				end
+				if state.client ~= nil then
+					for sugg, _ in pairs(connected_actions) do
+						n = n + 1
+						suggestions[n] = sugg
+					end
+				end
+				if state.workspace ~= nil then
+					for sugg, _ in pairs(joined_actions) do
+						n = n + 1
+						suggestions[n] = sugg
+					end
+				end
+				return filter(lead, suggestions)
 			elseif stage == 3 then
 				if args[#args-1] == 'attach' or args[#args-1] == 'detach' then
-					if client.workspace ~= nil then
-						local ws = native.get_workspace(client.workspace)
+					if state.client ~= nil and state.workspace ~= nil then
+						local ws = state.client:get_workspace(state.workspace)
 						if ws ~= nil then
 							return filter(lead, ws.filetree)
 						end

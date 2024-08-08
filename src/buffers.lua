@@ -1,18 +1,17 @@
-local native = require('codemp.loader').load()
-
 local utils = require('codemp.utils')
 local async = require('codemp.async')
+local state = require('codemp.state')
 
 local id_buffer_map = {}
 local buffer_id_map = {}
 local ticks = {}
 
-local function create(workspace, name, content)
-	native.get_workspace(workspace):create_buffer(name, content)
-	print(" ++ created buffer '" .. name .. "' on " .. workspace)
+local function create(name, content)
+	state.client:get_workspace(state.workspace):create_buffer(name, content)
+	print(" ++ created buffer '" .. name .. "' on " .. state.workspace)
 end
 
-local function attach(workspace, name, force)
+local function attach(name, force)
 	local buffer = nil
 	if force then
 		buffer = vim.api.nvim_get_current_buf()
@@ -24,7 +23,7 @@ local function attach(workspace, name, force)
 		vim.api.nvim_buf_set_name(buffer, "codemp::" .. name)
 		vim.api.nvim_set_current_buf(buffer)
 	end
-	local controller = native.get_workspace(workspace):attach_buffer(name)
+	local controller = state.client:get_workspace(state.workspace):attach_buffer(name)
 
 	-- TODO map name to uuid
 
@@ -55,7 +54,7 @@ local function attach(workspace, name, force)
 	-- vim.loop.sleep(200) -- moved inside poller thread to at least not block ui
 
 	-- hook clientbound callbacks
-	async.handler(workspace, name, controller, function(event)
+	async.handler(name, controller, function(event)
 		ticks[buffer] = vim.api.nvim_buf_get_changedtick(buffer)
 		local before = utils.buffer.get_content(buffer)
 		local after = event:apply(before)
@@ -67,21 +66,21 @@ local function attach(workspace, name, force)
 	print(" ++ attached to buffer " .. name)
 end
 
-local function detach(workspace, name)
+local function detach(name)
 	local buffer = buffer_id_map[name]
 	id_buffer_map[buffer] = nil
 	buffer_id_map[name] = nil
-	native.get_workspace(workspace):disconnect_buffer(name)
+	state.client:get_workspace(state.workspace):disconnect_buffer(name)
 	vim.api.nvim_buf_delete(buffer, {})
 
 	print(" -- detached from buffer " .. name)
 end
 
-local function sync(workspace)
+local function sync()
 	local buffer = vim.api.nvim_get_current_buf()
 	local name = id_buffer_map[buffer]
 	if name ~= nil then
-		local controller = native.get_workspace(workspace):get_buffer(name)
+		local controller = state.client:get_workspace(state.workspace):get_buffer(name)
 		ticks[buffer] = vim.api.nvim_buf_get_changedtick(buffer)
 		utils.buffer.set_content(buffer, controller.content)
 		print(" :: synched buffer " .. name)
