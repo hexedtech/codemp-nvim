@@ -54,7 +54,16 @@ local function attach(name, force)
 	-- hook clientbound callbacks
 	async.handler(name, controller, function(event)
 		ticks[buffer] = vim.api.nvim_buf_get_changedtick(buffer)
-		print(" ~~ applying change ~~ " .. event.first .. ".." .. event.last .. "::" .. event.content)
+		if event.hash ~= nil then
+			if utils.hash(utils.buffer.get_content(buffer)) ~= event.hash then
+				-- OUT OF SYNC!
+				-- TODO this may be destructive! we should probably prompt the user before doing this
+				print(" /!\\ out of sync, resynching...")
+				utils.buffer.set_content(buffer, controller:content())
+				return
+			end
+		end
+		-- print(" ~~ applying change ~~ " .. event.first .. ".." .. event.last .. "::" .. event.content)
 		utils.buffer.set_content(buffer, event.content, event.first, event.last)
 	end, 20) -- wait 20ms before polling again because it overwhelms libuv?
 
