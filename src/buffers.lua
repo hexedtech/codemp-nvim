@@ -48,25 +48,14 @@ local function attach(name, force)
 			)
 			-- print(string.format("%s %s %s %s -- '%s'", start_row, start_col, start_row + new_end_row, start_col + new_end_col, content))
 			controller:send(start_offset, start_offset + old_end_byte_len, content)
-			-- controller:send_diff(utils.buffer.get_content(buf))
 		end,
 	})
-
-	-- This is an ugly as hell fix: basically we receive all operations real fast at the start
-	--  so the buffer changes rapidly and it messes up tracking our delta/diff state and we 
-	--  get borked translated TextChanges (the underlying CRDT is fine)
-	-- basically delay a bit so that it has time to sync and we can then get "normal slow" changes
-	-- vim.loop.sleep(200) -- moved inside poller thread to at least not block ui
 
 	-- hook clientbound callbacks
 	async.handler(name, controller, function(event)
 		ticks[buffer] = vim.api.nvim_buf_get_changedtick(buffer)
 		print(" ~~ applying change ~~ " .. event.first .. ".." .. event.last .. "::" .. event.content)
 		utils.buffer.set_content(buffer, event.content, event.first, event.last)
-		-- local before = utils.buffer.get_content(buffer)
-		-- local after = event:apply(before)
-		-- utils.buffer.set_content(buffer, after)
-		-- buffer_replace_content(buffer, event.first, event.last, event.content)
 	end, 20) -- wait 20ms before polling again because it overwhelms libuv?
 
 	print(" ++ attached to buffer " .. name)
