@@ -40,15 +40,15 @@ local function register_cursor_handler(controller)
 			}
 		end
 		user_buffer[event.user] = event.buffer
-		local buffer = buffers.map_rev[event.position.buffer]
+		local buffer = buffers.map_rev[event.buffer]
 		if buffer ~= nil then
 			vim.api.nvim_buf_clear_namespace(buffer, user_hl[event.user].ns, 0, -1)
 			utils.multiline_highlight(
 				buffer,
 				user_hl[event.user].ns,
 				user_hl[event.user].hi,
-				event.position.start,
-				event.position.finish
+				event.start,
+				event.finish
 			)
 		end
 	end, 20)
