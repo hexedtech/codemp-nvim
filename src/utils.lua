@@ -1,3 +1,5 @@
+local native = require('codemp.loader').load()
+
 local function split_without_trim(str, sep)
 	local res = vim.fn.split(str, sep)
 	if str:sub(1,1) == "\n" then
@@ -129,4 +131,5 @@ return {
 		set_content = buffer_set_content,
 		replace_content = buffer_replace_content,
 	},
+	hash = native.hash,
 }
