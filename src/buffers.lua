@@ -42,11 +42,20 @@ local function attach(name, force)
 		on_bytes = function(_, buf, tick, start_row, start_col, start_offset, old_end_row, old_end_col, old_end_byte_len, new_end_row, new_end_col, new_byte_len)
 			if tick <= ticks[buf] then return end
 			if id_buffer_map[buf] == nil then return true end -- unregister callback handler
-			local content = table.concat(
-				vim.api.nvim_buf_get_text(buf, start_row, start_col, start_row + new_end_row, start_col + new_end_col, {}),
-				'\n'
-			)
-			-- print(string.format("%s %s %s %s -- '%s'", start_row, start_col, start_row + new_end_row, start_col + new_end_col, content))
+			print(string.format(
+				"start(row:%s, col:%s) offset:%s end(row:%s, col:%s new(row:%s, col:%s)) len(old:%s, new:%s)",
+				start_row, start_col, start_offset, old_end_row, old_end_col, new_end_row, new_end_col, old_end_byte_len, new_byte_len
+			))
+			local content
+			if new_byte_len == 0 then
+				content = ""
+			else
+				content = table.concat(
+					vim.api.nvim_buf_get_text(buf, start_row, start_col, start_row + new_end_row, start_col + new_end_col, {}),
+					'\n'
+				)
+			end
+			print(string.format("sending: %s %s %s %s -- '%s'", start_row, start_col, start_row + new_end_row, start_col + new_end_col, content))
 			controller:send(start_offset, start_offset + old_end_byte_len, content)
 		end,
 	})
@@ -54,6 +63,8 @@ local function attach(name, force)
 	-- hook clientbound callbacks
 	async.handler(name, controller, function(event)
 		ticks[buffer] = vim.api.nvim_buf_get_changedtick(buffer)
+		-- print(" ~~ applying change ~~ " .. event.first .. ".." .. event.last .. "::[" .. event.content .. "]")
+		utils.buffer.set_content(buffer, event.content, event.first, event.last)
 		if event.hash ~= nil then
 			if utils.hash(utils.buffer.get_content(buffer)) ~= event.hash then
 				-- OUT OF SYNC!
@@ -63,8 +74,6 @@ local function attach(name, force)
 				return
 			end
 		end
-		-- print(" ~~ applying change ~~ " .. event.first .. ".." .. event.last .. "::" .. event.content)
-		utils.buffer.set_content(buffer, event.content, event.first, event.last)
 	end, 20) -- wait 20ms before polling again because it overwhelms libuv?
 
 	print(" ++ attached to buffer " .. name)

@@ -1,16 +1,5 @@
 local native = require('codemp.loader').load()
 
-local function split_without_trim(str, sep)
-	local res = vim.fn.split(str, sep)
-	if str:sub(1,1) == "\n" then
-		table.insert(res, 1, '')
-	end
-	if str:sub(-1) == "\n" then
-		table.insert(res, '')
-	end
-	return res
-end
-
 local function order_tuples(x) -- TODO send help...
 	if x[1][1] < x[2][1] then
 		return { { x[1][1], x[1][2] }, { x[2][1], x[2][2] } }
@@ -54,31 +43,60 @@ local function buffer_get_content(buf)
 	return table.concat(lines, '\n')
 end
 
+-- TODO this seems to work but i lost my sanity over it. if you want
+--      to try and make it better be warned api is madness but i will
+--      thank you a lot because this is an ugly mess...
+--
+--  edge cases to test:
+--   - [x] add newline in buffer
+--   - [x] append newline to buffer
+--   - [x] delete multiline
+--   - [x] append at end of buffer
+--   - [x] delete at end of buffer
+--   - [x] delete line at end of buffer
+--   - [x] delete multiline at end of buffer
+--   - [x] autocomplete
 local function buffer_set_content(buf, content, first, last)
 	if first == nil and last == nil then
-		local lines = split_without_trim(content, "\n")
+		local lines = vim.split(content, "\n", {trimempty=false})
 		vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
 	else
 		local first_row, first_col, last_row, last_col
 		vim.api.nvim_buf_call(buf, function()
 			first_row = vim.fn.byte2line(first + 1) - 1
 			if first_row == -2 then
+				-- print("?? clamping start_row to start")
 				first_row = vim.fn.line('$') - 1
 			end
-			first_col = first - (vim.fn.line2byte(first_row + 1) - 1)
-			last_row = vim.fn.byte2line(last + 1) - 1
-			if last_row == -2 then
-				local sp = vim.split(content, "\n", {trimempty=false})
-				last_row = first_row + (#sp - 1)
-				last_col = string.len(sp[#sp])
+			local first_col_byte = vim.fn.line2byte(first_row + 1) - 1
+			if first_col_byte == -2 then
+				-- print("?? clamping start_col to 0")
+				first_col = 0
 			else
-				last_col = last - (vim.fn.line2byte(last_row + 1) - 1)
+				first_col = first - first_col_byte
+			end
+			if first == last then
+				last_row = first_row
+				last_col = first_col
+			else
+				last_row = vim.fn.byte2line(last + 1) - 1
+				if last_row == -2 then
+					print("?? clamping end_row to end")
+					last_row = vim.fn.line('$') - 1
+					last_col = last - vim.fn.line2byte(last_row + 1)
+				else
+					last_col = last - (vim.fn.line2byte(last_row + 1) - 1)
+				end
 			end
 		end)
-		vim.api.nvim_buf_set_text(
-			buf, first_row, first_col, last_row, last_col,
-			split_without_trim(content, "\n")
-		)
+		local content_array
+		if content == "" then
+			content_array = {}
+		else
+			content_array = vim.split(content, "\n", {trimempty=false})
+		end
+		-- print(string.format("set [%s..%s::'%s'] -> start(row:%s col:%s) end(row:%s, col:%s)", first, last, content, first_row, first_col, last_row, last_col))
+		vim.api.nvim_buf_set_text(buf, first_row, first_col, last_row, last_col, content_array)
 	end
 end
 
@@ -120,7 +138,6 @@ end
 
 
 return {
-	split_without_trim = split_without_trim,
 	order_tuples = order_tuples,
 	multiline_highlight = multiline_highlight,
 	cursor = {
