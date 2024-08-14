@@ -13,7 +13,8 @@ local function register_controller_handler(target, controller, handler, delay)
 					end
 				end)
 			else
-				print("error receiving: deadlocked?")
+				print("error receiving: " .. tostring(event))
+				break
 			end
 		end
 	end)
