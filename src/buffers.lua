@@ -42,13 +42,13 @@ local function attach(name, force)
 		on_bytes = function(_, buf, tick, start_row, start_col, start_offset, old_end_row, old_end_col, old_end_byte_len, new_end_row, new_end_col, new_byte_len)
 			if tick <= ticks[buf] then return end
 			if id_buffer_map[buf] == nil then return true end -- unregister callback handler
-			-- local content = table.concat(
-			-- 	vim.api.nvim_buf_get_text(buf, start_row, start_col, start_row + new_end_row, start_col + new_end_col, {}),
-			-- 	'\n'
-			-- )
+			local content = table.concat(
+				vim.api.nvim_buf_get_text(buf, start_row, start_col, start_row + new_end_row, start_col + new_end_col, {}),
+				'\n'
+			)
 			-- print(string.format("%s %s %s %s -- '%s'", start_row, start_col, start_row + new_end_row, start_col + new_end_col, content))
-			-- controller:send(start_offset, start_offset + old_end_byte_len, content)
-			controller:send_diff(utils.buffer.get_content(buf))
+			controller:send(start_offset, start_offset + old_end_byte_len, content)
+			-- controller:send_diff(utils.buffer.get_content(buf))
 		end,
 	})
 
@@ -61,10 +61,11 @@ local function attach(name, force)
 	-- hook clientbound callbacks
 	async.handler(name, controller, function(event)
 		ticks[buffer] = vim.api.nvim_buf_get_changedtick(buffer)
-		local before = utils.buffer.get_content(buffer)
-		local after = event:apply(before)
-		utils.buffer.set_content(buffer, after)
-		-- buffer_set_content(buffer, event.content, event.first, event.last)
+		print(" ~~ applying change ~~ " .. event.first .. ".." .. event.last .. "::" .. event.content)
+		utils.buffer.set_content(buffer, event.content, event.first, event.last)
+		-- local before = utils.buffer.get_content(buffer)
+		-- local after = event:apply(before)
+		-- utils.buffer.set_content(buffer, after)
 		-- buffer_replace_content(buffer, event.first, event.last, event.content)
 	end, 20) -- wait 20ms before polling again because it overwhelms libuv?
 
@@ -87,7 +88,7 @@ local function sync()
 	if name ~= nil then
 		local controller = state.client:get_workspace(state.workspace):get_buffer(name)
 		ticks[buffer] = vim.api.nvim_buf_get_changedtick(buffer)
-		utils.buffer.set_content(buffer, controller.content)
+		utils.buffer.set_content(buffer, controller:content())
 		print(" :: synched buffer " .. name)
 	else
 		print(" !! buffer not managed")
