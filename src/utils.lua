@@ -57,15 +57,22 @@ local function buffer_set_content(buf, content, first, last)
 		local lines = split_without_trim(content, "\n")
 		vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
 	else
-		-- TODO there is no api equivalent of byte2line afaik!
-		--      this is theoretically a big deal because we can only
-		--      operate on current buffer, but in practice we may only
-		--      really change the currently active buffer so this
-		--      may not matter
-		local first_row = vim.fn.byte2line(first + 1) - 1
-		local first_col = first - vim.api.nvim_buf_get_offset(buf, first_row)
-		local last_row = vim.fn.byte2line(last + 1) - 1
-		local last_col = last - vim.api.nvim_buf_get_offset(buf, last_row)
+		local first_row, first_col, last_row, last_col
+		vim.api.nvim_buf_call(buf, function()
+			first_row = vim.fn.byte2line(first + 1) - 1
+			if first_row == -2 then
+				first_row = vim.fn.line('$') - 1
+			end
+			first_col = first - (vim.fn.line2byte(first_row + 1) - 1)
+			last_row = vim.fn.byte2line(last + 1) - 1
+			if last_row == -2 then
+				local sp = vim.split(content, "\n", {trimempty=false})
+				last_row = first_row + (#sp - 1)
+				last_col = string.len(sp[#sp])
+			else
+				last_col = last - (vim.fn.line2byte(last_row + 1) - 1)
+			end
+		end)
 		vim.api.nvim_buf_set_text(
 			buf, first_row, first_col, last_row, last_col,
 			split_without_trim(content, "\n")
