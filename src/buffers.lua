@@ -16,11 +16,10 @@ local function delete(name)
 	print(" -- deleted buffer " .. name)
 end
 
-local function attach(name, force)
+local function attach(name, current, content)
 	local buffer = nil
-	if force then
+	if current then
 		buffer = vim.api.nvim_get_current_buf()
-		utils.buffer.set_content(buffer, "")
 	else
 		buffer = vim.api.nvim_create_buf(true, true)
 		vim.api.nvim_set_option_value('fileformat', 'unix', { buf = buffer })
@@ -35,6 +34,10 @@ local function attach(name, force)
 	id_buffer_map[buffer] = name
 	buffer_id_map[name] = buffer
 	ticks[buffer] = 0
+
+	if content ~= nil then
+		controller:send(0, 0, content)
+	end
 
 	-- hook serverbound callbacks
 	-- TODO breaks when deleting whole lines at buffer end
@@ -77,6 +80,7 @@ local function attach(name, force)
 	end, 20) -- wait 20ms before polling again because it overwhelms libuv?
 
 	print(" ++ attached to buffer " .. name)
+	return controller
 end
 
 local function detach(name)

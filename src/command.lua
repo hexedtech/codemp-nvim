@@ -1,6 +1,7 @@
 local state = require('codemp.state')
 local buffers = require('codemp.buffers')
 local workspace = require('codemp.workspace')
+local utils = require('codemp.utils')
 
 local native = require('codemp.loader').load()
 
@@ -50,6 +51,22 @@ local joined_actions = {
 	create = function(path)
 		if path == nil then error("missing buffer name") end
 		buffers.create(path)
+	end,
+
+	share = function(path)
+		if path == nil then
+			local cwd = vim.fn.getcwd()
+			local full_path = vim.fn.expand("%:p")
+			path = string.gsub(full_path, cwd .. "/", "") 
+		end
+		if #path > 0 then
+			local buf = vim.api.nvim_get_current_buf()
+			buffers.create(path)
+			local content = utils.buffer.get_content(buf)
+			buffers.attach(path, true, content)
+		else
+			print(" !! empty path or open a file")
+		end
 	end,
 
 	delete = function(path)
