@@ -2,6 +2,7 @@ local state = require('codemp.state')
 local buffers = require('codemp.buffers')
 local workspace = require('codemp.workspace')
 local utils = require('codemp.utils')
+local window = require('codemp.window')
 
 local native = require('codemp.loader').load()
 
@@ -29,7 +30,11 @@ local base_actions = {
 -- only available if state.client is not nil
 local connected_actions = {
 	id = function()
-		print(" ::codemp#" .. state.client.id)
+		print("> codemp::" .. state.client.id)
+	end,
+
+	toggle = function()
+		window.toggle()
 	end,
 
 	join = function(ws)
