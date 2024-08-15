@@ -18,7 +18,7 @@ end
 
 local function attach(name, current, content)
 	local buffer = nil
-	if current then
+	if current ~= nil then
 		buffer = vim.api.nvim_get_current_buf()
 	else
 		buffer = vim.api.nvim_create_buf(true, true)

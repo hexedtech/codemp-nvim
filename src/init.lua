@@ -59,6 +59,7 @@ return {
 	state = require('codemp.state'),
 	buffers = require('codemp.buffers'),
 	workspace = require('codemp.workspace'),
+	window = require('codemp.window'),
 	utils = require('codemp.utils'),
 	async = require('codemp.async'),
 }

@@ -4,6 +4,7 @@ local utils = require('codemp.utils')
 local buffers = require('codemp.buffers')
 local async = require('codemp.async')
 local state = require('codemp.state')
+local window = require('codemp.window')
 
 local user_hl = {}
 local user_buffer = {}
@@ -58,6 +59,26 @@ local function join(workspace)
 	local controller = state.client:join_workspace(workspace)
 	register_cursor_callback(controller)
 	register_cursor_handler(controller)
+
+	-- TODO nvim docs say that we should stop all threads before exiting nvim
+	--  but we like to live dangerously (:
+	local refresher = vim.loop.new_async(function () vim.schedule(function() window.update() end) end)
+	vim.loop.new_thread({}, function(_id, _ws, _refresher)
+		local _codemp = require('codemp.loader').load()
+		local _workspace = _codemp.get_client(_id):get_workspace(_ws)
+		while true do
+			local success, res = pcall(_workspace.event, _workspace)
+			if success then
+				print("workspace event!")
+				_refresher:send()
+			else
+				print("error waiting for workspace event: " .. res)
+				break
+			end
+		end
+	end, state.client.id, state.workspace, refresher)
+
+	window.update()
 end
 
 local function leave()
