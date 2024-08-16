@@ -2,7 +2,6 @@ local native = require('codemp.loader').load()
 
 local utils = require('codemp.utils')
 local buffers = require('codemp.buffers')
-local async = require('codemp.async')
 local state = require('codemp.state')
 local window = require('codemp.window')
 
@@ -33,51 +32,45 @@ local function register_cursor_callback(controller)
 end
 
 local function register_cursor_handler(controller)
-	async.handler(nil, controller, function(event)
-		if user_hl[event.user] == nil then
-			user_hl[event.user] = {
-				ns = vim.api.nvim_create_namespace("codemp-cursor-" .. event.user),
-				hi = available_colors[ math.random( #available_colors ) ],
-			}
+	local async = vim.loop.new_async(vim.schedule_wrap(function ()
+		while true do
+			local success, event = pcall(controller.try_recv, controller)
+			if not success then
+				print("error in cursor callback: " .. tostring(event))
+				break
+			end
+			if event == nil then break end
+			if user_hl[event.user] == nil then
+				user_hl[event.user] = {
+					ns = vim.api.nvim_create_namespace("codemp-cursor-" .. event.user),
+					hi = available_colors[ math.random( #available_colors ) ],
+				}
+			end
+			user_buffer[event.user] = event.buffer
+			local buffer = buffers.map_rev[event.buffer]
+			if buffer ~= nil then
+				vim.api.nvim_buf_clear_namespace(buffer, user_hl[event.user].ns, 0, -1)
+				utils.multiline_highlight(
+					buffer,
+					user_hl[event.user].ns,
+					user_hl[event.user].hi,
+					event.start,
+					event.finish
+				)
+			end
 		end
-		user_buffer[event.user] = event.buffer
-		local buffer = buffers.map_rev[event.buffer]
-		if buffer ~= nil then
-			vim.api.nvim_buf_clear_namespace(buffer, user_hl[event.user].ns, 0, -1)
-			utils.multiline_highlight(
-				buffer,
-				user_hl[event.user].ns,
-				user_hl[event.user].hi,
-				event.start,
-				event.finish
-			)
-		end
-	end, 20)
+	end))
+	controller:callback(function (_controller) async:send() end)
 end
 
 local function join(workspace)
-	local controller = state.client:join_workspace(workspace)
-	register_cursor_callback(controller)
-	register_cursor_handler(controller)
+	local ws = state.client:join_workspace(workspace)
+	register_cursor_callback(ws.cursor)
+	register_cursor_handler(ws.cursor)
 
-	-- TODO nvim docs say that we should stop all threads before exiting nvim
-	--  but we like to live dangerously (:
-	local refresher = vim.loop.new_async(function () vim.schedule(function() window.update() end) end)
-	vim.loop.new_thread({}, function(_id, _ws, _refresher)
-		local _codemp = require('codemp.loader').load()
-		local _workspace = _codemp.get_client(_id):get_workspace(_ws)
-		while true do
-			local success, res = pcall(_workspace.event, _workspace)
-			if success then
-				print("workspace event!")
-				_refresher:send()
-			else
-				print("error waiting for workspace event: " .. res)
-				break
-			end
-		end
-	end, state.client.id, state.workspace, refresher)
-
+	-- ws:callback(function (_ev)
+	-- 	vim.schedule(function() window.update() end)
+	-- end)
 	window.update()
 end
 

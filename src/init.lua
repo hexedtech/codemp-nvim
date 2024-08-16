@@ -25,7 +25,10 @@ end
 
 local native = require('codemp.loader').load() -- make sure we can load the native library correctly, otherwise no point going forward
 local state = require('codemp.state')
-native.runtime_drive_forever() -- spawn thread to drive tokio runtime
+local rt = native.runtime_drive_forever() -- spawn thread to drive tokio runtime
+-- native.logger(function (msg)
+-- 	vim.schedule(function () print(msg) end)
+-- end, true)
 
 vim.api.nvim_create_autocmd(
 	{"ExitPre"},
@@ -40,18 +43,6 @@ vim.api.nvim_create_autocmd(
 	}
 )
 
--- TODO nvim docs say that we should stop all threads before exiting nvim
---  but we like to live dangerously (:
-vim.loop.new_thread({}, function()
-	vim.loop.sleep(1000) -- allow user to setup their own logger options
-	local _codemp = require('codemp.loader').load()
-	_codemp.setup_logger()
-	local logger = _codemp.get_logger()
-	while true do
-		print(logger:recv())
-	end
-end)
-
 require('codemp.command')
 
 return {
@@ -61,5 +52,5 @@ return {
 	workspace = require('codemp.workspace'),
 	window = require('codemp.window'),
 	utils = require('codemp.utils'),
-	async = require('codemp.async'),
+	rt = rt,
 }

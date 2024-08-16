@@ -1,5 +1,4 @@
 local utils = require('codemp.utils')
-local async = require('codemp.async')
 local state = require('codemp.state')
 
 local id_buffer_map = {}
@@ -63,21 +62,32 @@ local function attach(name, current, content)
 		end,
 	})
 
-	-- hook clientbound callbacks
-	async.handler(name, controller, function(event)
-		ticks[buffer] = vim.api.nvim_buf_get_changedtick(buffer)
-		-- print(" ~~ applying change ~~ " .. event.first .. ".." .. event.last .. "::[" .. event.content .. "]")
-		utils.buffer.set_content(buffer, event.content, event.first, event.last)
-		if event.hash ~= nil then
-			if utils.hash(utils.buffer.get_content(buffer)) ~= event.hash then
-				-- OUT OF SYNC!
-				-- TODO this may be destructive! we should probably prompt the user before doing this
-				print(" /!\\ out of sync, resynching...")
-				utils.buffer.set_content(buffer, controller:content())
-				return
+	local async = vim.loop.new_async(vim.schedule_wrap(function ()
+		while true do
+			local success, event = pcall(controller.try_recv, controller)
+			if not success then
+				print("error in buffer async handler: " .. tostring(event))
+				break
+			end
+			if event == nil then break end
+			ticks[buffer] = vim.api.nvim_buf_get_changedtick(buffer)
+			-- print(" ~~ applying change ~~ " .. event.first .. ".." .. event.last .. "::[" .. event.content .. "]")
+			utils.buffer.set_content(buffer, event.content, event.first, event.last)
+			if event.hash ~= nil then
+				if utils.hash(utils.buffer.get_content(buffer)) ~= event.hash then
+					-- OUT OF SYNC!
+					-- TODO this may be destructive! we should probably prompt the user before doing this
+					print(" /!\\ out of sync, resynching...")
+					utils.buffer.set_content(buffer, controller:content())
+					return
+				end
 			end
 		end
-	end, 20) -- wait 20ms before polling again because it overwhelms libuv?
+	end))
+	controller:callback(function (_controller) async:send() end)
+	vim.schedule(function ()
+		async:send() -- run once to try_recv anything we synched in the meantime
+	end)
 
 	print(" ++ attached to buffer " .. name)
 	return controller
