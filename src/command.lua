@@ -22,7 +22,7 @@ local base_actions = {
 		if host == nil then host = 'http://codemp.alemi.dev:50053' end
 		local user = vim.g.codemp_username or vim.fn.input("username > ", "user-" .. vim.fn.rand() % 1024)
 		local password = vim.g.codemp_password or vim.fn.input("password > ", "lmaodefaultpassword")
-		state.client = native.connect(host, user, password)
+		state.client = native.connect(host, user, password):await()
 		print(" ++ connected to " .. host .. " as " .. user)
 	end,
 }
@@ -46,8 +46,7 @@ local connected_actions = {
 
 	disconnect = function()
 		print(" xx disconnecting client " .. state.client.id)
-		native.close_client(state.client.id)
-		state.client = nil
+		state.client = nil -- should drop and thus close everything
 	end,
 }
 

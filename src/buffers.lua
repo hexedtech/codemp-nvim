@@ -6,12 +6,12 @@ local buffer_id_map = {}
 local ticks = {}
 
 local function create(name, content)
-	state.client:get_workspace(state.workspace):create_buffer(name, content)
+	state.client:get_workspace(state.workspace):create_buffer(name, content):await()
 	print(" ++ created buffer '" .. name .. "' on " .. state.workspace)
 end
 
 local function delete(name)
-	state.client:get_workspace(state.workspace):delete_buffer(name)
+	state.client:get_workspace(state.workspace):delete_buffer(name):await()
 	print(" -- deleted buffer " .. name)
 end
 
@@ -26,7 +26,7 @@ local function attach(name, current, content)
 		vim.api.nvim_buf_set_name(buffer, "codemp::" .. name)
 		vim.api.nvim_set_current_buf(buffer)
 	end
-	local controller = state.client:get_workspace(state.workspace):attach(name)
+	local controller = state.client:get_workspace(state.workspace):attach(name):await()
 
 	-- TODO map name to uuid
 
@@ -35,7 +35,7 @@ local function attach(name, current, content)
 	ticks[buffer] = 0
 
 	if content ~= nil then
-		controller:send(0, 0, content)
+		controller:send(0, 0, content) -- no need to await
 	end
 
 	-- hook serverbound callbacks
@@ -58,36 +58,34 @@ local function attach(name, current, content)
 				)
 			end
 			print(string.format("sending: %s %s %s %s -- '%s'", start_row, start_col, start_row + new_end_row, start_col + new_end_col, content))
-			controller:send(start_offset, start_offset + old_end_byte_len, content)
+			controller:send(start_offset, start_offset + old_end_byte_len, content) -- no need to await
 		end,
 	})
 
 	local async = vim.loop.new_async(vim.schedule_wrap(function ()
 		while true do
-			local success, event = pcall(controller.try_recv, controller)
-			if not success then
-				print("error in buffer async handler: " .. tostring(event))
-				break
-			end
+			local event = controller:try_recv():await()
 			if event == nil then break end
 			ticks[buffer] = vim.api.nvim_buf_get_changedtick(buffer)
-			-- print(" ~~ applying change ~~ " .. event.first .. ".." .. event.last .. "::[" .. event.content .. "]")
+			print(" ~~ applying change ~~ " .. event.first .. ".." .. event.last .. "::[" .. event.content .. "]")
 			utils.buffer.set_content(buffer, event.content, event.first, event.last)
 			if event.hash ~= nil then
 				if utils.hash(utils.buffer.get_content(buffer)) ~= event.hash then
 					-- OUT OF SYNC!
 					-- TODO this may be destructive! we should probably prompt the user before doing this
 					print(" /!\\ out of sync, resynching...")
-					utils.buffer.set_content(buffer, controller:content())
+					utils.buffer.set_content(buffer, controller:content():await())
 					return
 				end
 			end
 		end
 	end))
 	controller:callback(function (_controller) async:send() end)
-	vim.schedule(function ()
-		async:send() -- run once to try_recv anything we synched in the meantime
-	end)
+	vim.defer_fn(function() async:send() end, 500) -- force a try_recv after 500ms
+
+	local remote_content = controller:content():await()
+	ticks[buffer] = vim.api.nvim_buf_get_changedtick(buffer)
+	utils.buffer.set_content(buffer, remote_content)
 
 	print(" ++ attached to buffer " .. name)
 	return controller
@@ -109,7 +107,7 @@ local function sync()
 	if name ~= nil then
 		local controller = state.client:get_workspace(state.workspace):get_buffer(name)
 		ticks[buffer] = vim.api.nvim_buf_get_changedtick(buffer)
-		utils.buffer.set_content(buffer, controller:content())
+		utils.buffer.set_content(buffer, controller:content():await())
 		print(" :: synched buffer " .. name)
 	else
 		print(" !! buffer not managed")

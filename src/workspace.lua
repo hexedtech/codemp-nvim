@@ -34,11 +34,7 @@ end
 local function register_cursor_handler(controller)
 	local async = vim.loop.new_async(vim.schedule_wrap(function ()
 		while true do
-			local success, event = pcall(controller.try_recv, controller)
-			if not success then
-				print("error in cursor callback: " .. tostring(event))
-				break
-			end
+			local event = controller:try_recv():await()
 			if event == nil then break end
 			if user_hl[event.user] == nil then
 				user_hl[event.user] = {
@@ -64,7 +60,7 @@ local function register_cursor_handler(controller)
 end
 
 local function join(workspace)
-	local ws = state.client:join_workspace(workspace)
+	local ws = state.client:join_workspace(workspace):await()
 	register_cursor_callback(ws.cursor)
 	register_cursor_handler(ws.cursor)
 
