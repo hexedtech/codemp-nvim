@@ -2,21 +2,21 @@
 
 <a href="https://codemp.dev"><img alt="codemp logo" align="center" src="https://codemp.dev/codemp-t.png" height="100" /></a>
 
-> code multiplexer for neovim
+### code multiplexer for neovim
 
-CodeMP is a **collaborative** text editing plugin to work remotely.
+> CodeMP is a **collaborative** text editing plugin to work remotely.
 It seamlessly integrates in your editor providing remote cursors and instant text synchronization,
 as well as a remote virtual workspace for you and your team.
 
-CodeMP is build with state-of-the-art CRDT technology, guaranteeing eventual consistency.
+> CodeMP is build with state-of-the-art CRDT technology, guaranteeing eventual consistency.
 This means everyone in a workspace will always be working on the exact same file _eventually_:
 even under unreliable networks or constrained resources, the underlying CRDT will always reach a 
 convergent state across all users. Even with this baseline, CodeMP's proto is optimized for speed 
 and low network footprint, meaning even slow connections can provide stable real-time editing.
 
-> This is the reference codemp neovim plugin maintained by [hexedtech](https://hexed.technology)
+This is the reference codemp neovim plugin maintained by [hexedtech](https://hexed.technology)
 
-## usage
+# usage
 
 > [!CAUTION]
 > codemp-nvim is not finished nor ready for early adopters, this is a demo
@@ -55,10 +55,10 @@ after a workspace is joined, more commands become available:
 
 MP command autocompletes available options for current state, so cycle <Tab> if you forget any name
 
-### configuration
+## configuration
 it's possible to configure global `vim.g.codemp_username` and a `vim.g.codemp_password` which will be used when connecting
 
-## installation
+# installation
 
 > [!IMPORTANT]
 > the release zip provided is a tech demo for linux, there are no official releases yet
@@ -67,7 +67,16 @@ it's possible to configure global `vim.g.codemp_username` and a `vim.g.codemp_pa
  * place the whole `codemp` folder under your `.config/nvim/lua` directory
  * add `CODEMP = require('codemp')` at the end of your `init.lua`
 
-### building
+## building
 this plugin relies on the native codemp lua bindings: just compile the main `codemp` project with `lua` feature enabled 
 and place a `lua.so` or `lua.dll` together with the plugin lua files while bundling
 
+```
+.config/
+  |-nvim/
+  :  |-lua/
+  :  :  |-codemp/
+  :  :  :  |- lua.(so|dll)
+  :  :  :  |- init.lua
+  :  :  :  :   ...
+```
