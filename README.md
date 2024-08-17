@@ -27,11 +27,19 @@ to interact with this plugin use the `:MP` command
 | --- | --- |
 | `:MP toggle` |  toggles the codemp sidebar |
 | `:MP connect [host] [username] [password]` |  to connect to server, user and pwd will be prompted if not given |
-|  |  |
+
+once connected, more commands become available:
+
+| command | description |
+| --- | --- |
 | `:MP disconnect` |  disconnects from server |
 | `:MP id` |  shows current client id |
 | `:MP join <workspace>` |  will join requested workspace; starts processing cursors, users and filetree |
-|  |  |
+
+after a workspace is joined, more commands become available:
+
+| command | description |
+| --- | --- |
 | `:MP leave <workspace>` |  disconnect from a joined workspace |
 | `:MP attach <buffer>` |  will attach to requested buffer if it exists (opens a new local buffer and uses current window) |
 | `:MP detach <buffer>` |  detach from a buffer and stop receiving changes |
