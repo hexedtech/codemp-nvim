@@ -1,5 +1,6 @@
 # codemp-nvim
-> ![codemp logo](https://codemp.dev/codemp-t.png) code multiplexer for neovim
+<img alt="codemp logo" align="center" src="https://codemp.dev/codemp-t.png" height="100" />
+> code multiplexer for neovim
 
 CodeMP is a **collaborative** text editing plugin to work remotely.
 It seamlessly integrates in your editor providing remote cursors and instant text synchronization,
