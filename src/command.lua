@@ -68,6 +68,7 @@ local joined_actions = {
 			buffers.create(path)
 			local content = utils.buffer.get_content(buf)
 			buffers.attach(path, true, content)
+			window.update() -- TODO would be nice to do automatically inside
 		else
 			print(" !! empty path or open a file")
 		end
@@ -94,6 +95,7 @@ local joined_actions = {
 	detach = function(path)
 		if path == nil then error("missing buffer name") end
 		buffers.detach(path)
+		window.update() -- TODO would be nice to do automatically inside
 	end,
 
 	leave = function(ws)

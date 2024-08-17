@@ -7,13 +7,57 @@ local window_id = nil
 local buffer_id = nil
 local ns = vim.api.nvim_create_namespace("codemp-window")
 
+vim.api.nvim_create_autocmd({"WinLeave"}, {
+	callback = function (ev)
+		if ev.id ~= window_id then
+			prev_window = vim.api.nvim_get_current_win()
+		end
+	end
+})
+
+local row_to_buffer = {}
+
+local function update_window()
+	if buffer_id == nil then error("cannot update window while codemp buffer is unset") end
+	row_to_buffer = {}
+	local buffer_to_row = {}
+	local off = {}
+	local tree = state.client:get_workspace(state.workspace).filetree
+	vim.api.nvim_set_option_value('modifiable', true, { buf = buffer_id })
+	utils.buffer.set_content(
+		buffer_id,
+		">| codemp\n |: " .. state.workspace .. "\n |\n |- "
+		.. vim.fn.join(tree, "\n |- ")
+	)
+	vim.highlight.range(buffer_id, ns, 'InlayHint', {0,0}, {0, 2})
+	vim.highlight.range(buffer_id, ns, 'Title', {0,3}, {0, 9})
+	vim.highlight.range(buffer_id, ns, 'InlayHint', {1,1}, {1, 3})
+	vim.highlight.range(buffer_id, ns, 'Directory', {1,4}, {1, 128})
+	vim.highlight.range(buffer_id, ns, 'InlayHint', {2,1}, {2, 3})
+	for n, name in ipairs(tree) do
+		buffer_to_row[name] = n+3
+		row_to_buffer[n+3] = name
+		vim.highlight.range(buffer_id, ns, 'InlayHint', {2+n,1}, {2+n, 3})
+		if buffers.map_rev[name] ~= nil then
+			vim.highlight.range(buffer_id, ns, 'Underlined', {2+n,4}, {2+n, 128})
+		end
+	end
+	for user, buffer in pairs(buffers.users) do
+		local row = buffer_to_row[buffer]
+		if off[row] == nil then
+			off[row] = 0
+		end
+		vim.highlight.range(buffer_id, ns, utils.color(user), {row,4+off[row]}, {row, 5+off[row]})
+		off[row] = off[row] + 1
+	end
+	vim.api.nvim_set_option_value('modifiable', false, { buf = buffer_id })
+end
+
 local function open_buffer_under_cursor()
 	if window_id == nil then return end
 	if buffer_id == nil then return end
 	local cursor = vim.api.nvim_win_get_cursor(window_id)
-	local line = vim.api.nvim_buf_get_lines(buffer_id, cursor[1]-1, cursor[1], true)
-	if not vim.startswith(line[1], " |- ") then return end
-	local path = string.gsub(line[1], " |%- ", "")
+	local path = row_to_buffer[cursor[1]]
 	if prev_window ~= nil then
 		vim.api.nvim_set_current_win(prev_window)
 	end
@@ -21,6 +65,7 @@ local function open_buffer_under_cursor()
 		vim.api.nvim_set_current_buf(buffers.map_rev[path])
 	else
 		buffers.attach(path)
+		update_window()
 	end
 end
 
@@ -34,25 +79,13 @@ local function init_window()
 	vim.highlight.range(buffer_id, ns, 'Title', {0,3}, {0, 9})
 	vim.keymap.set('n', '<CR>', function () open_buffer_under_cursor() end, { buffer = buffer_id })
 	vim.keymap.set('n', 'a', function () buffers.create(vim.fn.input("path > ", "")) end, { buffer = buffer_id })
-end
-
-local function update_window()
-	local tree = state.client:get_workspace(state.workspace).filetree
-	vim.api.nvim_set_option_value('modifiable', true, { buf = buffer_id })
-	utils.buffer.set_content(
-		buffer_id,
-		">| codemp\n |: " .. state.workspace .. "\n |\n |- "
-		.. vim.fn.join(tree, "\n |- ")
-	)
-	vim.highlight.range(buffer_id, ns, 'InlayHint', {0,0}, {0, 2})
-	vim.highlight.range(buffer_id, ns, 'Title', {0,3}, {0, 9})
-	vim.highlight.range(buffer_id, ns, 'InlayHint', {1,1}, {1, 3})
-	vim.highlight.range(buffer_id, ns, 'Directory', {1,4}, {1, 128})
-	vim.highlight.range(buffer_id, ns, 'InlayHint', {2,1}, {2, 3})
-	for n, _ in ipairs(tree) do
-		vim.highlight.range(buffer_id, ns, 'InlayHint', {2+n,1}, {2+n, 3})
-	end
-	vim.api.nvim_set_option_value('modifiable', false, { buf = buffer_id })
+	vim.api.nvim_create_autocmd({"WinClosed"}, {
+		callback = function (ev)
+			if tonumber(ev.match) == window_id then
+				window_id = nil
+			end
+		end
+	})
 end
 
 local function open_window()
@@ -84,4 +117,5 @@ return {
 	update = update_window,
 	toggle = toggle_window,
 	buffer = buffer_id,
+	id = window_id,
 }
