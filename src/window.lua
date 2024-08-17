@@ -21,14 +21,27 @@ local function update_window()
 	if buffer_id == nil then error("cannot update window while codemp buffer is unset") end
 	row_to_buffer = {}
 	local buffer_to_row = {}
+	local user_to_row = {}
 	local off = {}
 	local tree = state.client:get_workspace(state.workspace).filetree
 	vim.api.nvim_set_option_value('modifiable', true, { buf = buffer_id })
-	utils.buffer.set_content(
-		buffer_id,
-		">| codemp\n |: " .. state.workspace .. "\n |\n |- "
-		.. vim.fn.join(tree, "\n |- ")
-	)
+	local tmp =  ">| codemp\n"
+	tmp = tmp .. " |: " .. state.workspace .. "\n"
+	tmp = tmp .. " |\n"
+	local base_row = 3
+	for n, path in pairs(tree) do
+		tmp = tmp .. " |- " .. path .. "\n"
+		base_row = 3 + n
+		buffer_to_row[path] = base_row
+	end
+	tmp = tmp .. "\n\n\n"
+	base_row = base_row + 3
+	for usr, _ in pairs(buffers.users) do
+		tmp = tmp .. "* + " .. usr .. "\n"
+		base_row = base_row + 1
+		user_to_row[usr] = base_row
+	end
+	utils.buffer.set_content(buffer_id, tmp)
 	vim.highlight.range(buffer_id, ns, 'InlayHint', {0,0}, {0, 2})
 	vim.highlight.range(buffer_id, ns, 'Title', {0,3}, {0, 9})
 	vim.highlight.range(buffer_id, ns, 'InlayHint', {1,1}, {1, 3})
@@ -47,8 +60,11 @@ local function update_window()
 		if off[row] == nil then
 			off[row] = 0
 		end
-		vim.highlight.range(buffer_id, ns, utils.color(user), {row,4+off[row]}, {row, 5+off[row]})
+		vim.highlight.range(buffer_id, ns, utils.color(user), {row-1,4+off[row]}, {row-1, 5+off[row]})
 		off[row] = off[row] + 1
+		row = user_to_row[user]
+		vim.highlight.range(buffer_id, ns, 'InlayHint', {row-1, 0}, {row-1, 1})
+		vim.highlight.range(buffer_id, ns, utils.color(user), {row-1, 2}, {row-1, 3})
 	end
 	vim.api.nvim_set_option_value('modifiable', false, { buf = buffer_id })
 end
@@ -58,6 +74,10 @@ local function open_buffer_under_cursor()
 	if buffer_id == nil then return end
 	local cursor = vim.api.nvim_win_get_cursor(window_id)
 	local path = row_to_buffer[cursor[1]]
+	if path == nil then
+		print(" /!\\ not a buffer")
+		return
+	end
 	if prev_window ~= nil then
 		vim.api.nvim_set_current_win(prev_window)
 	end
