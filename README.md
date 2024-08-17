@@ -1,5 +1,7 @@
 # codemp-nvim
-<img alt="codemp logo" align="center" src="https://codemp.dev/codemp-t.png" height="100" />
+
+<a href="https://codemp.dev"><img alt="codemp logo" align="center" src="https://codemp.dev/codemp-t.png" height="100" /></a>
+
 > code multiplexer for neovim
 
 CodeMP is a **collaborative** text editing plugin to work remotely.
@@ -17,20 +19,22 @@ and low network footprint, meaning even slow connections can provide stable real
 ## usage
 to interact with this plugin use the `:MP` command
 
- * `:MP toggle` toggles the codemp sidebar
- * `:MP connect [host] [username] [password]` to connect to server, user and pwd will be prompted if not given
-
- * `:MP disconnect` disconnects from server
- * `:MP id` shows current client id
- * `:MP join <workspace>` will join requested workspace; starts processing cursors, users and filetree
-
- * `:MP leave <workspace>` disconnect from a joined workspace
- * `:MP attach <buffer>` will attach to requested buffer if it exists (opens a new local buffer and uses current window)
- * `:MP detach <buffer>` detach from a buffer and stop receiving changes
- * `:MP share` shares current file: creates a new buffer with local file's content, and attach to it
- * `:MP sync` forces resynchronization of current buffer
- * `:MP create <bufname>` will create a new empty buffer in workspace
- * `:MP delete <bufname>` will delete a buffer from workspace
+| command | description |
+| --- | --- |
+| `:MP toggle` |  toggles the codemp sidebar |
+| `:MP connect [host] [username] [password]` |  to connect to server, user and pwd will be prompted if not given |
+|  |  |
+| `:MP disconnect` |  disconnects from server |
+| `:MP id` |  shows current client id |
+| `:MP join <workspace>` |  will join requested workspace; starts processing cursors, users and filetree |
+|  |  |
+| `:MP leave <workspace>` |  disconnect from a joined workspace |
+| `:MP attach <buffer>` |  will attach to requested buffer if it exists (opens a new local buffer and uses current window) |
+| `:MP detach <buffer>` |  detach from a buffer and stop receiving changes |
+| `:MP share` |  shares current file: creates a new buffer with local file's content, and attach to it |
+| `:MP sync` |  forces resynchronization of current buffer |
+| `:MP create <bufname>` |  will create a new empty buffer in workspace |
+| `:MP delete <bufname>` |  will delete a buffer from workspace |
 
 ### quick start
  * first connect to server with `:MP connect`
