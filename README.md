@@ -17,6 +17,10 @@ and low network footprint, meaning even slow connections can provide stable real
 > This is the reference codemp neovim plugin maintained by [hexedtech](https://hexed.technology)
 
 ## usage
+
+> [!CAUTION]
+> codemp-nvim is not finished nor ready for early adopters, this is a demo
+
 to interact with this plugin use the `:MP` command
 
 | command | description |
@@ -47,9 +51,13 @@ MP command autocompletes available options for current state, so cycle <Tab> if 
 it's possible to configure global `vim.g.codemp_username` and a `vim.g.codemp_password` which will be used when connecting
 
 ## installation
-**currently there is no stable release available**
 
-an internal testing build is available here, place the whole `codemp` folder under your `.config/nvim/lua` directory
+> [!IMPORTANT]
+> the release zip provided is a tech demo for linux, there are no official releases yet
+
+ * download the internal demo bundle from [here](https://github.com/hexedtech/codemp-nvim/releases/tag/v0.1)
+ * place the whole `codemp` folder under your `.config/nvim/lua` directory
+ * add `CODEMP = require('codemp')` at the end of your `init.lua`
 
 ### building
 this plugin relies on the native codemp lua bindings: just compile the main `codemp` project with `lua` feature enabled 
