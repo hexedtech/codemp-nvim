@@ -11,7 +11,7 @@ local available_colors = { -- TODO these are definitely not portable!
 }
 
 local function color(x)
-	return available_colors[ (native.hash(x) % #available_colors) + 1 ]
+	return available_colors[ math.fmod(math.abs(native.hash(x)), #available_colors) + 1 ]
 end
 
 local function order_tuples(x) -- TODO send help...
