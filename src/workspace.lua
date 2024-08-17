@@ -34,20 +34,23 @@ local function register_cursor_handler(controller)
 			end
 			local old_buffer = buffers.users[event.user]
 			if old_buffer ~= nil then
-				vim.api.nvim_buf_clear_namespace(old_buffer, user_hl[event.user].ns, 0, -1)
+				local old_buffer_id = buffers.map_rev[old_buffer]
+				if old_buffer_id ~= nil then
+					vim.api.nvim_buf_clear_namespace(old_buffer_id, user_hl[event.user].ns, 0, -1)
+				end
 			end
 			buffers.users[event.user] = event.buffer
-			local buffer = buffers.map_rev[event.buffer]
-			if buffer ~= nil then
+			local buffer_id = buffers.map_rev[event.buffer]
+			if buffer_id ~= nil then
 				utils.multiline_highlight(
-					buffer,
+					buffer_id,
 					user_hl[event.user].ns,
 					user_hl[event.user].hi,
 					event.start,
 					event.finish
 				)
 			end
-			if old_buffer ~= buffer then
+			if old_buffer ~= event.buffer then
 				window.update() -- redraw user positions
 			end
 		end
@@ -104,7 +107,6 @@ return {
 	join = join,
 	leave = leave,
 	map = user_hl,
-	colors = available_colors,
 	positions = user_buffer,
 	open_buffer_tree = open_buffer_tree,
 	buffer_tree = tree_buf,
