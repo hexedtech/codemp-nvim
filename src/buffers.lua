@@ -3,6 +3,7 @@ local state = require('codemp.state')
 
 local id_buffer_map = {}
 local buffer_id_map = {}
+local user_buffer_name = {}
 local ticks = {}
 
 local function create(name, content)
@@ -124,4 +125,5 @@ return {
 	map = id_buffer_map,
 	map_rev = buffer_id_map,
 	ticks = ticks,
+	users = user_buffer_name,
 }
