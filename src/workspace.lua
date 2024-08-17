@@ -42,10 +42,13 @@ local function register_cursor_handler(controller)
 					hi = available_colors[ math.random( #available_colors ) ],
 				}
 			end
+			local old_buffer = user_buffer[event.user]
+			if old_buffer ~= nil then
+				vim.api.nvim_buf_clear_namespace(old_buffer, user_hl[event.user].ns, 0, -1)
+			end
 			user_buffer[event.user] = event.buffer
 			local buffer = buffers.map_rev[event.buffer]
 			if buffer ~= nil then
-				vim.api.nvim_buf_clear_namespace(buffer, user_hl[event.user].ns, 0, -1)
 				utils.multiline_highlight(
 					buffer,
 					user_hl[event.user].ns,
