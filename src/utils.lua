@@ -1,5 +1,19 @@
 local native = require('codemp.loader').load()
 
+local available_colors = { -- TODO these are definitely not portable!
+	"ErrorMsg",
+	"WarningMsg",
+	"MatchParen",
+	"SpecialMode",
+	"CmpItemKindFunction",
+	"CmpItemKindValue",
+	"CmpItemKindInterface",
+}
+
+local function color(x)
+	return available_colors[ (native.hash(x) % #available_colors) + 1 ]
+end
+
 local function order_tuples(x) -- TODO send help...
 	if x[1][1] < x[2][1] then
 		return { { x[1][1], x[1][2] }, { x[2][1], x[2][2] } }
@@ -149,4 +163,6 @@ return {
 		replace_content = buffer_replace_content,
 	},
 	hash = native.hash,
+	available_colors = available_colors,
+	color = color,
 }

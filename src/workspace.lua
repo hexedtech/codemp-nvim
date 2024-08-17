@@ -7,15 +7,6 @@ local window = require('codemp.window')
 
 local user_hl = {}
 local tree_buf = nil
-local available_colors = { -- TODO these are definitely not portable!
-	"ErrorMsg",
-	"WarningMsg",
-	"MatchParen",
-	"SpecialMode",
-	"CmpItemKindFunction",
-	"CmpItemKindValue",
-	"CmpItemKindInterface",
-}
 
 local function register_cursor_callback(controller)
 	vim.api.nvim_create_autocmd({"CursorMoved", "CursorMovedI", "ModeChanged"}, {
@@ -38,7 +29,7 @@ local function register_cursor_handler(controller)
 			if user_hl[event.user] == nil then
 				user_hl[event.user] = {
 					ns = vim.api.nvim_create_namespace("codemp-cursor-" .. event.user),
-					hi = available_colors[ math.random( #available_colors ) ],
+					hi = utils.color(event.user),
 				}
 			end
 			local old_buffer = buffers.users[event.user]
