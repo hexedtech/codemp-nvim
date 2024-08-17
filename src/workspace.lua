@@ -56,6 +56,9 @@ local function register_cursor_handler(controller)
 					event.finish
 				)
 			end
+			if old_buffer ~= buffer then
+				window.update() -- redraw user positions
+			end
 		end
 	end))
 	controller:callback(function (_controller) async:send() end)
@@ -66,9 +69,18 @@ local function join(workspace)
 	register_cursor_callback(ws.cursor)
 	register_cursor_handler(ws.cursor)
 
-	-- ws:callback(function (_ev)
-	-- 	vim.schedule(function() window.update() end)
-	-- end)
+	ws:callback(function (event)
+		if event.type == "leave" then
+			if buffers.users[event.value] ~= nil then
+				vim.schedule(function ()
+					vim.api.nvim_buf_clear_namespace(buffers.users[event.value], user_hl[event.value].ns, 0, -1)
+					buffers.users[event.value] = nil
+					user_hl[event.value] = nil
+				end)
+			end
+		end
+		vim.schedule(function() window.update() end)
+	end)
 	window.update()
 end
 
