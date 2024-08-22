@@ -26,9 +26,9 @@ end
 local native = require('codemp.loader').load() -- make sure we can load the native library correctly, otherwise no point going forward
 local state = require('codemp.state')
 local rt = native.runtime_drive_forever() -- spawn thread to drive tokio runtime
--- native.logger(function (msg)
--- 	vim.schedule(function () print(msg) end)
--- end, true)
+--native.logger(function (msg)
+--	vim.schedule(function () print(msg) end)
+--end, true)
 
 vim.api.nvim_create_autocmd(
 	{"ExitPre"},
