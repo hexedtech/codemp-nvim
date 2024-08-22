@@ -2,9 +2,15 @@ local state = require('codemp.state')
 local utils = require('codemp.utils')
 local buffers = require('codemp.buffers')
 
-local buffer_id
+---@type integer?
+local buffer_id = nil
+
+---@type integer?
 local prev_window = nil
+
+---@type integer?
 local window_id = nil
+
 local ns = vim.api.nvim_create_namespace("codemp-window")
 
 vim.api.nvim_create_autocmd({"WinLeave"}, {
@@ -15,6 +21,7 @@ vim.api.nvim_create_autocmd({"WinLeave"}, {
 	end
 })
 
+---@type table<integer, string>
 local row_to_buffer = {}
 
 local function update_window()
@@ -109,6 +116,7 @@ local function init_window()
 end
 
 local function open_window()
+	if buffer_id == nil then error("no active codemp buffer, reinitialize the window") end
 	window_id = vim.api.nvim_open_win(buffer_id, true, {
 		win = 0,
 		split = 'left',

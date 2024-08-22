@@ -10,10 +10,14 @@ local available_colors = { -- TODO these are definitely not portable!
 	"CmpItemKindInterface",
 }
 
+---@param x string
+---@return string
 local function color(x)
 	return available_colors[ math.fmod(math.abs(native.hash(x)), #available_colors) + 1 ]
 end
 
+---@param x [ [integer, integer], [integer, integer] ]
+---@return [ [integer, integer], [integer, integer] ]
 local function order_tuples(x) -- TODO send help...
 	if x[1][1] < x[2][1] then
 		return { { x[1][1], x[1][2] }, { x[2][1], x[2][2] } }
@@ -26,6 +30,73 @@ local function order_tuples(x) -- TODO send help...
 	end
 end
 
+---@param first integer
+---@param last integer
+---@return integer, integer, integer, integer
+local function offset_to_rowcol(first, last)
+	local start_row, start_col, end_row, end_col
+
+	-- TODO this seems to work but i lost my sanity over it. if you want
+	--      to try and make it better be warned api is madness but i will
+	--      thank you a lot because this is an ugly mess...
+	--
+	--  edge cases to test:
+	--   - [x] add newline in buffer
+	--   - [x] append newline to buffer
+	--   - [x] delete multiline
+	--   - [x] append at end of buffer
+	--   - [x] delete at end of buffer
+	--   - [x] delete line at end of buffer
+	--   - [x] delete multiline at end of buffer
+	--   - [x] autocomplete
+	--   - [ ] delete whole buffer
+	--   - [ ] enter insert in newline with `o`
+
+	start_row = vim.fn.byte2line(first + 1) - 1
+	if start_row == -2 then
+		-- print("?? clamping start_row to start")
+		start_row = vim.fn.line('$') - 1
+	end
+	local first_col_byte = vim.fn.line2byte(start_row + 1) - 1
+	if first_col_byte == -2 then
+		-- print("?? clamping start_col to 0")
+		start_col = 0
+	else
+		start_col = first - first_col_byte
+	end
+	if first == last then
+		end_row = start_row
+		end_col = start_col
+	else
+		end_row = vim.fn.byte2line(last + 1) - 1
+		if end_row == -2 then
+			print("?? clamping end_row to end")
+			end_row = vim.fn.line('$') - 1
+			end_col = last - vim.fn.line2byte(end_row + 1)
+		else
+			end_col = last - (vim.fn.line2byte(end_row + 1) - 1)
+		end
+	end
+
+	-- TODO this is an older approach, which covers less edge cases
+	--      but i didnt bother documenting/testing it yet properly
+
+	----send help it works but why is lost knowledge
+	--start_row = vim.fn.byte2line(first + 1) - 1
+	--if start_row < 0 then start_row = 0 end
+	--local start_row_byte = vim.fn.line2byte(start_row + 1) - 1
+	--if start_row_byte < 0 then start_row_byte = 0 end
+	--start_col = first - start_row_byte
+	--end_row = vim.fn.byte2line(last + 1) - 1
+	--if end_row < 0 then end_row = 0 end
+	--local end_row_byte = vim.fn.line2byte(end_row + 1) - 1
+	--if end_row_byte < 0 then end_row_byte = 0 end
+	--end_col = last - end_row_byte
+
+	return start_row, start_col, end_row, end_col
+end
+
+---@return [ [integer, integer], [integer, integer] ]
 local function cursor_position()
 	local mode = vim.api.nvim_get_mode().mode
 	if mode == "v" then
@@ -49,6 +120,8 @@ local function cursor_position()
 	end
 end
 
+---@param buf integer?
+---@return string
 local function buffer_get_content(buf)
 	if buf == nil then
 		buf = vim.api.nvim_get_current_buf()
@@ -57,53 +130,27 @@ local function buffer_get_content(buf)
 	return table.concat(lines, '\n')
 end
 
--- TODO this seems to work but i lost my sanity over it. if you want
---      to try and make it better be warned api is madness but i will
---      thank you a lot because this is an ugly mess...
---
---  edge cases to test:
---   - [x] add newline in buffer
---   - [x] append newline to buffer
---   - [x] delete multiline
---   - [x] append at end of buffer
---   - [x] delete at end of buffer
---   - [x] delete line at end of buffer
---   - [x] delete multiline at end of buffer
---   - [x] autocomplete
---   - [ ] delete whole buffer
---   - [ ] enter insert in newline with `o`
+---@param buf integer
+---@param content string
+---@param first integer?
+---@param last integer?
+---set content of a buffer using byte indexes
+---if first and last are both nil, set whole buffer content
+---if first is nil, it defaults to 0
+---if last is nil, it will calculate and use the last byte in the buffer
 local function buffer_set_content(buf, content, first, last)
 	if first == nil and last == nil then
 		local lines = vim.split(content, "\n", {trimempty=false})
 		vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
 	else
+		if first == nil then first = 0 end
+		if last == nil then
+			local line_count = vim.api.nvim_buf_line_count(buf)
+			last = vim.api.nvim_buf_get_offset(buf, line_count + 1)
+		end
 		local first_row, first_col, last_row, last_col
 		vim.api.nvim_buf_call(buf, function()
-			first_row = vim.fn.byte2line(first + 1) - 1
-			if first_row == -2 then
-				-- print("?? clamping start_row to start")
-				first_row = vim.fn.line('$') - 1
-			end
-			local first_col_byte = vim.fn.line2byte(first_row + 1) - 1
-			if first_col_byte == -2 then
-				-- print("?? clamping start_col to 0")
-				first_col = 0
-			else
-				first_col = first - first_col_byte
-			end
-			if first == last then
-				last_row = first_row
-				last_col = first_col
-			else
-				last_row = vim.fn.byte2line(last + 1) - 1
-				if last_row == -2 then
-					print("?? clamping end_row to end")
-					last_row = vim.fn.line('$') - 1
-					last_col = last - vim.fn.line2byte(last_row + 1)
-				else
-					last_col = last - (vim.fn.line2byte(last_row + 1) - 1)
-				end
-			end
+			first_row, first_col, last_row, last_col = offset_to_rowcol(first or 0, last or 0)
 		end)
 		local content_array
 		if content == "" then
@@ -116,26 +163,11 @@ local function buffer_set_content(buf, content, first, last)
 	end
 end
 
-local function buffer_replace_content(buffer, first, last, content)
-	-- TODO send help it works but why is lost knowledge
-	local start_row = vim.fn.byte2line(first + 1) - 1
-	if start_row < 0 then start_row = 0 end
-	local start_row_byte = vim.fn.line2byte(start_row + 1) - 1
-	if start_row_byte < 0 then start_row_byte = 0 end
-	local end_row = vim.fn.byte2line(last + 1) - 1
-	if end_row < 0 then end_row = 0 end
-	local end_row_byte = vim.fn.line2byte(end_row + 1) - 1
-	if end_row_byte < 0 then end_row_byte = 0 end
-	vim.api.nvim_buf_set_text(
-		buffer,
-		start_row,
-		first - start_row_byte,
-		end_row,
-		last - end_row_byte,
-		vim.fn.split(content, '\n', true)
-	)
-end
-
+---@param buf integer buffer to highlight onto
+---@param ns integer namespace for highlight
+---@param group string highlight group
+---@param start RowCol
+---@param fini RowCol
 local function multiline_highlight(buf, ns, group, start, fini)
 	for i=start.row,fini.row do
 		if i == start.row and i == fini.row then
@@ -162,7 +194,6 @@ return {
 	buffer = {
 		get_content = buffer_get_content,
 		set_content = buffer_set_content,
-		replace_content = buffer_replace_content,
 	},
 	hash = native.hash,
 	available_colors = available_colors,

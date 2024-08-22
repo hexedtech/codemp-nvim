@@ -4,8 +4,8 @@ local state = require('codemp.state')
 local window = require('codemp.window')
 
 local user_hl = {}
-local tree_buf = nil
 
+---@param controller CursorController
 local function register_cursor_callback(controller)
 	vim.api.nvim_create_autocmd({"CursorMoved", "CursorMovedI", "ModeChanged"}, {
 		group = vim.api.nvim_create_augroup("codemp-workspace-" .. state.workspace, { clear = true }),
@@ -13,12 +13,13 @@ local function register_cursor_callback(controller)
 			local cur = utils.cursor.position()
 			local buf = vim.api.nvim_get_current_buf()
 			if buffers.map[buf] ~= nil then
-				controller:send(buffers.map[buf], cur[1][1], cur[1][2], cur[2][1], cur[2][2])
+				local _ = controller:send(buffers.map[buf], cur[1][1], cur[1][2], cur[2][1], cur[2][2]) -- no need to await here
 			end
 		end
 	})
 end
 
+---@param controller CursorController
 local function register_cursor_handler(controller)
 	local async = vim.loop.new_async(vim.schedule_wrap(function ()
 		while true do
@@ -56,6 +57,9 @@ local function register_cursor_handler(controller)
 	controller:callback(function (_controller) async:send() end)
 end
 
+---@param workspace string workspace name to join
+---@return Workspace
+---join a workspace and register event handlers
 local function join(workspace)
 	local ws = state.client:join_workspace(workspace):await()
 	register_cursor_callback(ws.cursor)
@@ -84,30 +88,8 @@ local function leave()
 	print(" -- left workspace")
 end
 
-local function open_buffer_tree()
-	local tree = state.workspace:filetree()
-	if tree_buf == nil then
-		tree_buf = vim.api.nvim_create_buf(false, true)
-		vim.api.nvim_buf_set_name(tree_buf, "codemp::" .. state.workspace)
-		vim.api.nvim_set_option_value('buftype', 'nofile', { buf = tree_buf })
-	end
-	vim.api.nvim_set_option_value('modifiable', true, { buf = tree_buf })
-	utils.buffer.set_content(tree_buf, "codemp::" .. state.workspace .. "\n\n- " .. vim.fn.join(tree, "\n- "))
-	vim.api.nvim_set_option_value('modifiable', false, { buf = tree_buf })
-	vim.api.nvim_open_win(tree_buf, true, {
-		win = 0,
-		split = 'left',
-		width = 20,
-	})
-	vim.api.nvim_set_option_value('relativenumber', false, {})
-	vim.api.nvim_set_option_value('number', false, {})
-	vim.api.nvim_set_option_value('cursorlineopt', 'line', {})
-end
-
 return {
 	join = join,
 	leave = leave,
 	map = user_hl,
-	open_buffer_tree = open_buffer_tree,
-	buffer_tree = tree_buf,
 }

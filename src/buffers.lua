@@ -6,16 +6,21 @@ local buffer_id_map = {}
 local user_buffer_name = {}
 local ticks = {}
 
+---@param name string
 local function create(name)
 	state.workspace:create_buffer(name):await()
 	print(" ++ created buffer '" .. name .. "' on " .. state.workspace.name)
 end
 
+---@param name string
 local function delete(name)
 	state.workspace:delete_buffer(name):await()
 	print(" -- deleted buffer " .. name)
 end
 
+---@param name string
+---@param current boolean
+---@param content string
 local function attach(name, current, content)
 	local buffer = nil
 	if current ~= nil then
@@ -92,6 +97,7 @@ local function attach(name, current, content)
 	return controller
 end
 
+---@param name string
 local function detach(name)
 	local buffer = buffer_id_map[name]
 	id_buffer_map[buffer] = nil
