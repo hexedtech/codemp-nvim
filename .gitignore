@@ -1,9 +1,0 @@
-/target
-
-Cargo.lock
-
-# vscode extension build files
-/client/vscode/node_modules/
-/client/vscode/*.vsix
-/client/vscode/codemp.node
-
