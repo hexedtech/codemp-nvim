@@ -23,7 +23,7 @@ local function update_window()
 	local buffer_to_row = {}
 	local user_to_row = {}
 	local off = {}
-	local tree = state.client:get_workspace(state.workspace).filetree
+	local tree = state.client:get_workspace(state.workspace):filetree()
 	vim.api.nvim_set_option_value('modifiable', true, { buf = buffer_id })
 	local tmp =  ">| codemp\n"
 	tmp = tmp .. " |: " .. state.workspace .. "\n"

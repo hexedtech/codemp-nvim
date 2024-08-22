@@ -162,7 +162,7 @@ vim.api.nvim_create_user_command(
 					if state.client ~= nil and state.workspace ~= nil then
 						local ws = state.client:get_workspace(state.workspace)
 						if ws ~= nil then
-							return filter(lead, ws.filetree)
+							return filter(lead, ws:filetree())
 						end
 					end
 				end

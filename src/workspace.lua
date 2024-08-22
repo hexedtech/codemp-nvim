@@ -84,7 +84,7 @@ local function leave()
 end
 
 local function open_buffer_tree()
-	local tree = state.client:get_workspace(state.workspace).filetree
+	local tree = state.client:get_workspace(state.workspace):filetree()
 	if tree_buf == nil then
 		tree_buf = vim.api.nvim_create_buf(false, true)
 		vim.api.nvim_buf_set_name(tree_buf, "codemp::" .. state.workspace)
