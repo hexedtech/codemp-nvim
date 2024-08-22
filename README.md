@@ -34,6 +34,9 @@ once connected, more commands become available:
 | --- | --- |
 | `:MP disconnect` |  disconnects from server |
 | `:MP id` |  shows current client id |
+| `:MP start <workspace>` |  will create a new workspace with given name |
+| `:MP invite <user> [workspace]` |  invite given user to workspace  |
+| `:MP available` |  list all workspaces available to join  |
 | `:MP join <workspace>` |  will join requested workspace; starts processing cursors, users and filetree |
 
 after a workspace is joined, more commands become available:

@@ -44,6 +44,32 @@ local connected_actions = {
 		print(" >< joined workspace " .. ws)
 	end,
 
+	start = function(ws)
+		if ws == nil then error("missing workspace name") end
+		state.client:create_workspace(ws):await()
+		print(" <> created workspace " .. ws)
+	end,
+
+	available = function()
+		for _, ws in ipairs(state.client:list_workspaces(true, false):await()) do
+			print(" ++ " .. ws)
+		end
+		for _, ws in ipairs(state.client:list_workspaces(false, true):await()) do
+			print(" -- " .. ws)
+		end
+	end,
+
+	invite = function(user)
+		local ws
+		if state.workspace ~= nil then
+			ws = state.workspace
+		else
+			ws = vim.fn.input("workspace > ", "")
+		end
+		state.client:invite_to_workspace(ws, user):await()
+		print(" ][ invited " .. user .. " to workspace " .. ws)
+	end,
+
 	disconnect = function()
 		print(" xx disconnecting client " .. state.client.id)
 		state.client = nil -- should drop and thus close everything
