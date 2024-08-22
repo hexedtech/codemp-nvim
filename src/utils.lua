@@ -70,6 +70,8 @@ end
 --   - [x] delete line at end of buffer
 --   - [x] delete multiline at end of buffer
 --   - [x] autocomplete
+--   - [ ] delete whole buffer
+--   - [ ] enter insert in newline with `o`
 local function buffer_set_content(buf, content, first, last)
 	if first == nil and last == nil then
 		local lines = vim.split(content, "\n", {trimempty=false})

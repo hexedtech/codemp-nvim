@@ -2,9 +2,9 @@ local state = require('codemp.state')
 local utils = require('codemp.utils')
 local buffers = require('codemp.buffers')
 
+local buffer_id
 local prev_window = nil
 local window_id = nil
-local buffer_id = nil
 local ns = vim.api.nvim_create_namespace("codemp-window")
 
 vim.api.nvim_create_autocmd({"WinLeave"}, {
@@ -23,7 +23,7 @@ local function update_window()
 	local buffer_to_row = {}
 	local user_to_row = {}
 	local off = {}
-	local tree = state.client:get_workspace(state.workspace):filetree()
+	local tree = state.workspace:filetree()
 	vim.api.nvim_set_option_value('modifiable', true, { buf = buffer_id })
 	local tmp =  ">| codemp\n"
 	tmp = tmp .. " |: " .. state.workspace .. "\n"

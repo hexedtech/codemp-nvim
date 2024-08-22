@@ -18,10 +18,16 @@ end
 
 -- always available
 local base_actions = {
-	connect = function(host)
+	connect = function(host, bang)
 		if host == nil then host = 'http://codemp.alemi.dev:50053' end
-		local user = vim.g.codemp_username or vim.fn.input("username > ", "")
-		local password = vim.g.codemp_password or vim.fn.input("password > ", "")
+		local user, password
+		if bang then -- ignore configured values
+			user = vim.fn.input("username > ", "")
+			password = vim.fn.input("password > ", "")
+		else
+			user = vim.g.codemp_username or vim.fn.input("username > ", "")
+			password = vim.g.codemp_password or vim.fn.input("password > ", "")
+		end
 		state.client = native.connect(host, user, password):await()
 		print(" ++ connected to " .. host .. " as " .. user)
 	end,
@@ -39,8 +45,7 @@ local connected_actions = {
 
 	join = function(ws)
 		if ws == nil then error("missing workspace name") end
-		state.workspace = ws
-		workspace.join(ws)
+		state.workspace = workspace.join(ws)
 		print(" >< joined workspace " .. ws)
 	end,
 
@@ -87,7 +92,7 @@ local joined_actions = {
 		if path == nil then
 			local cwd = vim.fn.getcwd()
 			local full_path = vim.fn.expand("%:p")
-			path = string.gsub(full_path, cwd .. "/", "") 
+			path = string.gsub(full_path, cwd .. "/", "")
 		end
 		if #path > 0 then
 			local buf = vim.api.nvim_get_current_buf()
@@ -186,9 +191,8 @@ vim.api.nvim_create_user_command(
 			elseif stage == 3 then
 				if args[#args-1] == 'attach' or args[#args-1] == 'detach' then
 					if state.client ~= nil and state.workspace ~= nil then
-						local ws = state.client:get_workspace(state.workspace)
-						if ws ~= nil then
-							return filter(lead, ws:filetree())
+						if state.workspace ~= nil then
+							return filter(lead, state.workspace:filetree())
 						end
 					end
 				end

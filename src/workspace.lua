@@ -1,5 +1,3 @@
-local native = require('codemp.loader').load()
-
 local utils = require('codemp.utils')
 local buffers = require('codemp.buffers')
 local state = require('codemp.state')
@@ -63,6 +61,7 @@ local function join(workspace)
 	register_cursor_callback(ws.cursor)
 	register_cursor_handler(ws.cursor)
 
+	-- TODO this is temporary and ad-hoc
 	ws:callback(function (event)
 		if event.type == "leave" then
 			if buffers.users[event.value] ~= nil then
@@ -76,15 +75,17 @@ local function join(workspace)
 		vim.schedule(function() window.update() end)
 	end)
 	window.update()
+
+	return ws
 end
 
 local function leave()
-	native.leave_workspace()
+	state.client:leave_workspace(state.workspace.name)
 	print(" -- left workspace")
 end
 
 local function open_buffer_tree()
-	local tree = state.client:get_workspace(state.workspace):filetree()
+	local tree = state.workspace:filetree()
 	if tree_buf == nil then
 		tree_buf = vim.api.nvim_create_buf(false, true)
 		vim.api.nvim_buf_set_name(tree_buf, "codemp::" .. state.workspace)
@@ -107,7 +108,6 @@ return {
 	join = join,
 	leave = leave,
 	map = user_hl,
-	positions = user_buffer,
 	open_buffer_tree = open_buffer_tree,
 	buffer_tree = tree_buf,
 }

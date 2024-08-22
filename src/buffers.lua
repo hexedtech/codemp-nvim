@@ -6,13 +6,13 @@ local buffer_id_map = {}
 local user_buffer_name = {}
 local ticks = {}
 
-local function create(name, content)
-	state.client:get_workspace(state.workspace):create_buffer(name, content):await()
-	print(" ++ created buffer '" .. name .. "' on " .. state.workspace)
+local function create(name)
+	state.workspace:create_buffer(name):await()
+	print(" ++ created buffer '" .. name .. "' on " .. state.workspace.name)
 end
 
 local function delete(name)
-	state.client:get_workspace(state.workspace):delete_buffer(name):await()
+	state.workspace:delete_buffer(name):await()
 	print(" -- deleted buffer " .. name)
 end
 
@@ -27,7 +27,7 @@ local function attach(name, current, content)
 		vim.api.nvim_buf_set_name(buffer, "codemp::" .. name)
 		vim.api.nvim_set_current_buf(buffer)
 	end
-	local controller = state.client:get_workspace(state.workspace):attach(name):await()
+	local controller = state.workspace:attach_buffer(name):await()
 
 	-- TODO map name to uuid
 
@@ -36,7 +36,7 @@ local function attach(name, current, content)
 	ticks[buffer] = 0
 
 	if content ~= nil then
-		controller:send(0, 0, content) -- no need to await
+		local _ = controller:send(0, 0, content) -- no need to await
 	end
 
 	-- hook serverbound callbacks
@@ -49,17 +49,17 @@ local function attach(name, current, content)
 				"start(row:%s, col:%s) offset:%s end(row:%s, col:%s new(row:%s, col:%s)) len(old:%s, new:%s)",
 				start_row, start_col, start_offset, old_end_row, old_end_col, new_end_row, new_end_col, old_end_byte_len, new_byte_len
 			))
-			local content
+			local change_content
 			if new_byte_len == 0 then
-				content = ""
+				change_content = ""
 			else
-				content = table.concat(
+				change_content = table.concat(
 					vim.api.nvim_buf_get_text(buf, start_row, start_col, start_row + new_end_row, start_col + new_end_col, {}),
 					'\n'
 				)
 			end
-			print(string.format("sending: %s %s %s %s -- '%s'", start_row, start_col, start_row + new_end_row, start_col + new_end_col, content))
-			controller:send(start_offset, start_offset + old_end_byte_len, content) -- no need to await
+			print(string.format("sending: %s %s %s %s -- '%s'", start_row, start_col, start_row + new_end_row, start_col + new_end_col, change_content))
+			controller:send(start_offset, start_offset + old_end_byte_len, change_content):await()
 		end,
 	})
 
@@ -96,7 +96,7 @@ local function detach(name)
 	local buffer = buffer_id_map[name]
 	id_buffer_map[buffer] = nil
 	buffer_id_map[name] = nil
-	state.client:get_workspace(state.workspace):detach(name)
+	state.workspace:detach_buffer(name)
 	vim.api.nvim_buf_delete(buffer, {})
 
 	print(" -- detached from buffer " .. name)
@@ -106,13 +106,16 @@ local function sync()
 	local buffer = vim.api.nvim_get_current_buf()
 	local name = id_buffer_map[buffer]
 	if name ~= nil then
-		local controller = state.client:get_workspace(state.workspace):get_buffer(name)
-		ticks[buffer] = vim.api.nvim_buf_get_changedtick(buffer)
-		utils.buffer.set_content(buffer, controller:content():await())
-		print(" :: synched buffer " .. name)
-	else
-		print(" !! buffer not managed")
+		local controller = state.workspace:get_buffer(name)
+		if controller ~= nil then
+			ticks[buffer] = vim.api.nvim_buf_get_changedtick(buffer)
+			utils.buffer.set_content(buffer, controller:content():await())
+			print(" :: synched buffer " .. name)
+			return
+		end
 	end
+
+	print(" !! buffer not managed")
 end
 
 
