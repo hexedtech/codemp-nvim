@@ -1,5 +1,5 @@
 local utils = require('codemp.utils')
-local state = require('codemp.state')
+local session = require('codemp.session')
 
 local id_buffer_map = {}
 local buffer_id_map = {}
@@ -32,7 +32,7 @@ local function attach(name, current, content)
 		vim.api.nvim_buf_set_name(buffer, "codemp::" .. name)
 		vim.api.nvim_set_current_buf(buffer)
 	end
-	local controller = state.workspace:attach_buffer(name):await()
+	local controller = session.workspace:attach_buffer(name):await()
 
 	-- TODO map name to uuid
 
@@ -102,7 +102,7 @@ local function detach(name)
 	local buffer = buffer_id_map[name]
 	id_buffer_map[buffer] = nil
 	buffer_id_map[name] = nil
-	state.workspace:detach_buffer(name)
+	session.workspace:detach_buffer(name)
 	vim.api.nvim_buf_delete(buffer, {})
 
 	print(" -- detached from buffer " .. name)
@@ -112,7 +112,7 @@ local function sync()
 	local buffer = vim.api.nvim_get_current_buf()
 	local name = id_buffer_map[buffer]
 	if name ~= nil then
-		local controller = state.workspace:get_buffer(name)
+		local controller = session.workspace:get_buffer(name)
 		if controller ~= nil then
 			ticks[buffer] = vim.api.nvim_buf_get_changedtick(buffer)
 			utils.buffer.set_content(buffer, controller:content():await())

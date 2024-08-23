@@ -1,14 +1,15 @@
 local utils = require('codemp.utils')
 local buffers = require('codemp.buffers')
-local state = require('codemp.state')
+local session = require('codemp.session')
 local window = require('codemp.window')
 
 local user_hl = {}
 
----@param controller CursorController
-local function register_cursor_callback(controller)
+---@param ws Workspace
+local function register_cursor_callback(ws)
+	local controller = ws.cursor
 	vim.api.nvim_create_autocmd({"CursorMoved", "CursorMovedI", "ModeChanged"}, {
-		group = vim.api.nvim_create_augroup("codemp-workspace-" .. state.workspace, { clear = true }),
+		group = vim.api.nvim_create_augroup("codemp-workspace-" .. ws.name, { clear = true }),
 		callback = function (_)
 			local cur = utils.cursor.position()
 			local buf = vim.api.nvim_get_current_buf()
@@ -19,8 +20,9 @@ local function register_cursor_callback(controller)
 	})
 end
 
----@param controller CursorController
-local function register_cursor_handler(controller)
+---@param ws Workspace
+local function register_cursor_handler(ws)
+	local controller = ws.cursor
 	local async = vim.loop.new_async(vim.schedule_wrap(function ()
 		while true do
 			local event = controller:try_recv():await()
@@ -61,9 +63,10 @@ end
 ---@return Workspace
 ---join a workspace and register event handlers
 local function join(workspace)
-	local ws = state.client:join_workspace(workspace):await()
-	register_cursor_callback(ws.cursor)
-	register_cursor_handler(ws.cursor)
+	local ws = session.client:join_workspace(workspace):await()
+	print(" >< joined workspace " .. ws.name)
+	register_cursor_callback(ws)
+	register_cursor_handler(ws)
 
 	-- TODO this is temporary and ad-hoc
 	ws:callback(function (event)
@@ -78,14 +81,16 @@ local function join(workspace)
 		end
 		vim.schedule(function() window.update() end)
 	end)
-	window.update()
+
+	session.workspace = ws
 
 	return ws
 end
 
 local function leave()
-	state.client:leave_workspace(state.workspace.name)
+	session.client:leave_workspace(session.workspace.name)
 	print(" -- left workspace")
+	session.workspace = nil
 end
 
 return {

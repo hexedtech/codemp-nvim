@@ -24,7 +24,7 @@ end
 -- end
 
 local native = require('codemp.loader').load() -- make sure we can load the native library correctly, otherwise no point going forward
-local state = require('codemp.state')
+local session = require('codemp.session')
 local rt = native.spawn_runtime_driver() -- spawn thread to drive tokio runtime
 --native.logger(function (msg)
 --	vim.schedule(function () print(msg) end)
@@ -34,9 +34,9 @@ vim.api.nvim_create_autocmd(
 	{"ExitPre"},
 	{
 		callback = function (_ev)
-			if state.client ~= nil then
+			if session.client ~= nil then
 				print(" xx disconnecting codemp client")
-				state.client = nil
+				session.client = nil
 			end
 		end
 	}
@@ -46,7 +46,7 @@ require('codemp.command')
 
 return {
 	native = native,
-	state = require('codemp.state'),
+	session = session,
 	buffers = require('codemp.buffers'),
 	workspace = require('codemp.workspace'),
 	window = require('codemp.window'),

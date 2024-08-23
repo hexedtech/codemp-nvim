@@ -1,4 +1,4 @@
-local state = require('codemp.state')
+local session = require('codemp.session')
 local utils = require('codemp.utils')
 local buffers = require('codemp.buffers')
 
@@ -30,10 +30,10 @@ local function update_window()
 	local buffer_to_row = {}
 	local user_to_row = {}
 	local off = {}
-	local tree = state.workspace:filetree()
+	local tree = session.workspace:filetree()
 	vim.api.nvim_set_option_value('modifiable', true, { buf = buffer_id })
 	local tmp =  ">| codemp\n"
-	tmp = tmp .. " |: " .. state.workspace .. "\n"
+	tmp = tmp .. " |: " .. session.workspace.name .. "\n"
 	tmp = tmp .. " |\n"
 	local base_row = 3
 	for n, path in pairs(tree) do

@@ -1,4 +1,4 @@
-local state = require('codemp.state')
+local session = require('codemp.session')
 local buffers = require('codemp.buffers')
 local workspace = require('codemp.workspace')
 local utils = require('codemp.utils')
@@ -36,7 +36,7 @@ local base_actions = {
 -- only available if state.client is not nil
 local connected_actions = {
 	id = function()
-		print("> codemp::" .. state.client.id)
+		print("> codemp::" .. session.client.id)
 	end,
 
 	toggle = function()
@@ -45,39 +45,38 @@ local connected_actions = {
 
 	join = function(ws)
 		if ws == nil then error("missing workspace name") end
-		state.workspace = workspace.join(ws)
-		print(" >< joined workspace " .. ws)
+		workspace.join(ws)
 	end,
 
 	start = function(ws)
 		if ws == nil then error("missing workspace name") end
-		state.client:create_workspace(ws):await()
+		session.client:create_workspace(ws):await()
 		print(" <> created workspace " .. ws)
 	end,
 
 	available = function()
-		for _, ws in ipairs(state.client:list_workspaces(true, false):await()) do
+		for _, ws in ipairs(session.client:list_workspaces(true, false):await()) do
 			print(" ++ " .. ws)
 		end
-		for _, ws in ipairs(state.client:list_workspaces(false, true):await()) do
+		for _, ws in ipairs(session.client:list_workspaces(false, true):await()) do
 			print(" -- " .. ws)
 		end
 	end,
 
 	invite = function(user)
 		local ws
-		if state.workspace ~= nil then
-			ws = state.workspace
+		if session.workspace ~= nil then
+			ws = session.workspace
 		else
 			ws = vim.fn.input("workspace > ", "")
 		end
-		state.client:invite_to_workspace(ws, user):await()
+		session.client:invite_to_workspace(ws, user):await()
 		print(" ][ invited " .. user .. " to workspace " .. ws)
 	end,
 
 	disconnect = function()
-		print(" xx disconnecting client " .. state.client.id)
-		state.client = nil -- should drop and thus close everything
+		print(" xx disconnecting client " .. session.client.id)
+		session.client = nil -- should drop and thus close everything
 	end,
 }
 
@@ -120,7 +119,7 @@ local joined_actions = {
 
 	attach = function(path, bang)
 		if path == nil then error("missing buffer name") end
-		buffers.attach(path, bang)
+		buffers.attach(path)
 	end,
 
 	detach = function(path)
@@ -131,7 +130,7 @@ local joined_actions = {
 
 	leave = function(ws)
 		if ws == nil then error("missing workspace to leave") end
-		state.client:leave_workspace(ws)
+		workspace.leave()
 	end,
 }
 
@@ -145,11 +144,11 @@ vim.api.nvim_create_user_command(
 			fn = base_actions[action]
 		end
 
-		if state.client ~= nil and connected_actions[action] ~= nil then
+		if session.client ~= nil and connected_actions[action] ~= nil then
 			fn = connected_actions[action]
 		end
 
-		if state.workspace ~= nil and joined_actions[action] ~= nil then
+		if session.workspace ~= nil and joined_actions[action] ~= nil then
 			fn = joined_actions[action]
 		end
 
@@ -175,13 +174,13 @@ vim.api.nvim_create_user_command(
 					n = n + 1
 					suggestions[n] = sugg
 				end
-				if state.client ~= nil then
+				if session.client ~= nil then
 					for sugg, _ in pairs(connected_actions) do
 						n = n + 1
 						suggestions[n] = sugg
 					end
 				end
-				if state.workspace ~= nil then
+				if session.workspace ~= nil then
 					for sugg, _ in pairs(joined_actions) do
 						n = n + 1
 						suggestions[n] = sugg
@@ -190,9 +189,9 @@ vim.api.nvim_create_user_command(
 				return filter(lead, suggestions)
 			elseif stage == 3 then
 				if args[#args-1] == 'attach' or args[#args-1] == 'detach' then
-					if state.client ~= nil and state.workspace ~= nil then
-						if state.workspace ~= nil then
-							return filter(lead, state.workspace:filetree())
+					if session.client ~= nil and session.workspace ~= nil then
+						if session.workspace ~= nil then
+							return filter(lead, session.workspace:filetree())
 						end
 					end
 				end
