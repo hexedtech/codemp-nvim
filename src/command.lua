@@ -3,6 +3,7 @@ local buffers = require('codemp.buffers')
 local workspace = require('codemp.workspace')
 local utils = require('codemp.utils')
 local window = require('codemp.window')
+local client = require("codemp.client")
 
 local native = require('codemp.loader').load()
 
@@ -19,17 +20,7 @@ end
 -- always available
 local base_actions = {
 	connect = function(host, bang)
-		if host == nil then host = 'http://codemp.alemi.dev:50053' end
-		local user, password
-		if bang then -- ignore configured values
-			user = vim.fn.input("username > ", "")
-			password = vim.fn.input("password > ", "")
-		else
-			user = vim.g.codemp_username or vim.fn.input("username > ", "")
-			password = vim.g.codemp_password or vim.fn.input("password > ", "")
-		end
-		state.client = native.connect(host, user, password):await()
-		print(" ++ connected to " .. host .. " as " .. user)
+		client.connect(host, bang)
 	end,
 }
 
