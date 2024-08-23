@@ -1,31 +1,23 @@
 local utils = require('codemp.utils')
 local session = require('codemp.session')
 
+---@type table<integer, string>
 local id_buffer_map = {}
+---@type table<string, integer>
 local buffer_id_map = {}
+---@type table<string, string>
 local user_buffer_name = {}
 local ticks = {}
 
----@param name string
-local function create(name)
-	state.workspace:create_buffer(name):await()
-	print(" ++ created buffer '" .. name .. "' on " .. state.workspace.name)
-end
-
----@param name string
-local function delete(name)
-	state.workspace:delete_buffer(name):await()
-	print(" -- deleted buffer " .. name)
-end
-
----@param name string
----@param current boolean
----@param content string
-local function attach(name, current, content)
-	local buffer = nil
-	if current ~= nil then
-		buffer = vim.api.nvim_get_current_buf()
-	else
+---@param name string name of buffer to attach to
+---@param buffer? integer if provided, use given buffer (will clear content)
+---@param content? string if provided, set this content after attaching
+---@return BufferController
+local function attach(name, buffer, content)
+	if buffer_id_map[name] ~= nil then
+		error("already attached to buffer " .. name)
+	end
+	if buffer == nil then
 		buffer = vim.api.nvim_create_buf(true, true)
 		vim.api.nvim_set_option_value('fileformat', 'unix', { buf = buffer })
 		-- vim.api.nvim_buf_set_option(buffer, 'filetype', 'codemp') -- TODO get from codemp?
@@ -98,6 +90,7 @@ local function attach(name, current, content)
 end
 
 ---@param name string
+--TODO this should happen at the level above (Workspace) but accesses tables on this level, badly designed!
 local function detach(name)
 	local buffer = buffer_id_map[name]
 	id_buffer_map[buffer] = nil
@@ -108,8 +101,11 @@ local function detach(name)
 	print(" -- detached from buffer " .. name)
 end
 
-local function sync()
-	local buffer = vim.api.nvim_get_current_buf()
+---@param buffer? integer if provided, sync given buffer id, otherwise sync current buf
+local function sync(buffer)
+	if buffer == nil then
+		buffer = vim.api.nvim_get_current_buf()
+	end
 	local name = id_buffer_map[buffer]
 	if name ~= nil then
 		local controller = session.workspace:get_buffer(name)
@@ -126,8 +122,6 @@ end
 
 
 return {
-	create = create,
-	delete = delete,
 	sync = sync,
 	attach = attach,
 	detach = detach,
