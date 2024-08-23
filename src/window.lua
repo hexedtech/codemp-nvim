@@ -1,3 +1,17 @@
+local success, manager = pcall(require, "neo-tree.sources.manager")
+if success then
+	-- we have Neotree installed! use it for cool tree view
+	return {
+		update = function () manager.refresh("codemp") end,
+		init = function () end,
+		open = function () vim.cmd(":Neotree open source=codemp<CR>") end,
+		toggle = function () vim.cmd(":Neotree toggle source=codemp<CR>") end,
+	}
+end
+
+-- we don't have Neotree installed, cook a rough window
+
+
 local session = require('codemp.session')
 local utils = require('codemp.utils')
 local buffers = require('codemp.buffers')
@@ -144,6 +158,4 @@ return {
 	open = open_window,
 	update = update_window,
 	toggle = toggle_window,
-	buffer = buffer_id,
-	id = window_id,
 }
