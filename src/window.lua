@@ -4,8 +4,8 @@ if success then
 	return {
 		update = function () manager.refresh("codemp") end,
 		init = function () end,
-		open = function () vim.cmd(":Neotree open source=codemp<CR>") end,
-		toggle = function () vim.cmd(":Neotree toggle source=codemp<CR>") end,
+		open = function () vim.cmd("Neotree open source=codemp") end,
+		toggle = function () vim.cmd("Neotree toggle source=codemp") end,
 	}
 end
 
