@@ -42,6 +42,7 @@ local connected_actions = {
 	start = function(ws)
 		if ws == nil then error("missing workspace name") end
 		session.client:create_workspace(ws):await()
+		vim.schedule(function () workspace.list(session.client) end)
 		print(" <> created workspace " .. ws)
 	end,
 

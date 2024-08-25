@@ -3,20 +3,16 @@ local window = require("codemp.window")
 local session = require("codemp.session")
 local workspace = require("codemp.workspace")
 
-local function connect(host, bang)
-	if host == nil then host = 'http://codemp.alemi.dev:50054' end
-	local user, password
-	if bang then -- ignore configured values
-		user = vim.fn.input("username > ", "")
-		password = vim.fn.input("password > ", "")
-	else
-		user = vim.g.codemp_username or vim.fn.input("username > ", "")
-		password = vim.g.codemp_password or vim.fn.input("password > ", "")
-	end
-	session.client = native.connect(host, user, password):await()
-	session.available = workspace.list(session.client)
-	window.update()
-	print(" ++ connected to " .. host .. " as " .. user)
+local function connect(host, username, password)
+	if host == nil then host = 'http://codemp.dev:50053' end
+	if username == nil then username = vim.g.codemp_username or vim.fn.input("username > ", "") end
+	if password == nil then password = vim.g.codemp_password or vim.fn.input("password > ", "") end
+	native.connect(host, username, password):and_then(function (client)
+		session.client = client
+		window.update()
+		print(" ++ connected to " .. host .. " as " .. username)
+		vim.schedule(function () workspace.list(client) end)
+	end)
 end
 
 return {

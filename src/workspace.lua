@@ -5,23 +5,26 @@ local window = require('codemp.window')
 
 local user_hl = {}
 
-local function fetch_workspaces_list(client)
+local function fetch_workspaces_list()
 	local new_list = {}
-	local owned = client:list_workspaces(true, false):await()
-	for _, ws in pairs(owned) do
-		table.insert(new_list, {
-			name = ws,
-			owned = true,
-		})
-	end
-	local invited = client:list_workspaces(false, true):await()
-	for _, ws in pairs(invited) do
-		table.insert(new_list, {
-			name = ws,
-			owned = false,
-		})
-	end
-	return new_list
+	session.client:list_workspaces(true, false):and_then(function (owned)
+		for _, ws in pairs(owned) do
+			table.insert(new_list, {
+				name = ws,
+				owned = true,
+			})
+		end
+		session.client:list_workspaces(false, true):and_then(function (invited)
+			for _, ws in pairs(invited) do
+				table.insert(new_list, {
+					name = ws,
+					owned = false,
+				})
+			end
+			session.available = new_list
+			window.update()
+		end)
+	end)
 end
 
 ---@param ws Workspace
@@ -102,6 +105,7 @@ local function join(workspace)
 	end)
 
 	session.workspace = ws
+	window.update()
 
 	return ws
 end
