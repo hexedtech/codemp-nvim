@@ -7,24 +7,22 @@ local user_hl = {}
 
 local function fetch_workspaces_list()
 	local new_list = {}
-	session.client:list_workspaces(true, false):and_then(function (owned)
-		for _, ws in pairs(owned) do
-			table.insert(new_list, {
-				name = ws,
-				owned = true,
-			})
-		end
-		session.client:list_workspaces(false, true):and_then(function (invited)
-			for _, ws in pairs(invited) do
-				table.insert(new_list, {
-					name = ws,
-					owned = false,
-				})
-			end
-			session.available = new_list
-			window.update()
-		end)
-	end)
+	local owned = session.client:list_workspaces(true, false):await()
+	for _, ws in pairs(owned) do
+		table.insert(new_list, {
+			name = ws,
+			owned = true,
+		})
+	end
+	local invited = session.client:list_workspaces(false, true):await()
+	for _, ws in pairs(invited) do
+		table.insert(new_list, {
+			name = ws,
+			owned = false,
+		})
+	end
+	session.available = new_list
+	window.update()
 end
 
 ---@param ws Workspace
