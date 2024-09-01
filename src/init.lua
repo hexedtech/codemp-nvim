@@ -38,6 +38,7 @@ vim.api.nvim_create_autocmd(
 				print(" xx disconnecting codemp client")
 				session.client = nil
 			end
+			rt:stop()
 		end
 	}
 )
