@@ -43,6 +43,18 @@ vim.api.nvim_create_autocmd(
 	}
 )
 
+local timer_interval = vim.g.codemp_callback_interval or 100
+
+local timer = vim.loop.new_timer()
+timer:start(timer_interval, timer_interval, function()
+	while true do
+		local cb = native.poll_callback()
+		if cb == nil then break end
+		cb()
+	end
+end)
+
+
 require('codemp.command')
 
 return {
@@ -52,5 +64,7 @@ return {
 	workspace = require('codemp.workspace'),
 	window = require('codemp.window'),
 	utils = require('codemp.utils'),
+	logger = native.logger,
 	rt = rt,
+	callbacks_timer = timer,
 }
