@@ -19,8 +19,8 @@ end
 
 -- always available
 local base_actions = {
-	connect = function(host, bang)
-		client.connect(host, bang)
+	connect = function(host)
+		client.connect(host)
 	end,
 }
 
@@ -42,7 +42,7 @@ local connected_actions = {
 	start = function(ws)
 		if ws == nil then error("missing workspace name") end
 		session.client:create_workspace(ws):await()
-		vim.schedule(function () workspace.list(session.client) end)
+		vim.schedule(function () workspace.list() end)
 		print(" <> created workspace " .. ws)
 	end,
 
@@ -89,7 +89,7 @@ local joined_actions = {
 			local buf = vim.api.nvim_get_current_buf()
 			buffers.create(path)
 			local content = utils.buffer.get_content(buf)
-			buffers.attach(path, true, content)
+			buffers.attach(path, buf, content)
 			window.update() -- TODO would be nice to do automatically inside
 		else
 			print(" !! empty path or open a file")
