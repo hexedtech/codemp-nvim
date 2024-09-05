@@ -5,8 +5,6 @@ local utils = require('codemp.utils')
 local window = require('codemp.window')
 local client = require("codemp.client")
 
-local native = require('codemp.loader').load()
-
 local function filter(needle, haystack)
 	local hints = {}
 	for _, opt in pairs(haystack) do
