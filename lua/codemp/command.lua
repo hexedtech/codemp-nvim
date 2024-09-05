@@ -19,6 +19,10 @@ end
 
 -- always available
 local base_actions = {
+	toggle = function()
+		window.toggle()
+	end,
+
 	connect = function(host)
 		client.connect(host)
 	end,
@@ -28,10 +32,6 @@ local base_actions = {
 local connected_actions = {
 	id = function()
 		print("> codemp::" .. session.client.id)
-	end,
-
-	toggle = function()
-		window.toggle()
 	end,
 
 	join = function(ws)
