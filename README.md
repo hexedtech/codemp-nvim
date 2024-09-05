@@ -13,8 +13,9 @@ This is the reference codemp [neovim](https://neovim.io) plugin maintained by [h
 
 > [!CAUTION]
 > codemp-nvim is not finished nor ready for early adopters, this is a demo
+Interact with this plugin using the `:MP` command.
 
-to interact with this plugin use the `:MP` command
+Most actions can be performed from the side tree: toggle it with `:MP toggle`.
 
 | command | description |
 | --- | --- |
