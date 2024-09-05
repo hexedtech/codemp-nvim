@@ -9,10 +9,34 @@ as well as a remote virtual workspace for you and your team.
 
 This is the reference codemp [neovim](https://neovim.io) plugin maintained by [hexedtech](https://hexed.technology)
 
-# usage
+# installation
+Currently only [lazy.nvim](https://github.com/folke/lazy.nvim) is supported, but codemp should work with any plugin manager able to run `build.lua` upon installation and update.
 
-> [!CAUTION]
-> codemp-nvim is not finished nor ready for early adopters, this is a demo
+Just add `hexedtech/codemp-nvim` in your plugin spec.
+
+Note that the native codemp lua library will be downloaded automatically on each update.
+
+## neo-tree integration
+`codemp-nvim` integrates with [neo-tree](https://github.com/nvim-neo-tree/neo-tree.nvim) to provide a rich and intuitive file tree.
+
+To enable this integration, add `vim.g.codemp_neo_tree = true` in your `init.lua` and add `codemp` as a neo-tree source:
+
+```lua
+{
+	"nvim-neo-tree/neo-tree.nvim",
+	dependencies = { "hexedtech/codemp-nvim" },
+	config = function ()
+		require('neo-tree').setup({
+			sources = {
+				-- your other sources
+				"codemp.neo-tree",
+			},
+		})
+	end,
+}
+```
+
+# usage
 Interact with this plugin using the `:MP` command.
 
 Most actions can be performed from the side tree: toggle it with `:MP toggle`.
@@ -53,15 +77,6 @@ after a workspace is joined, more commands become available:
 MP command autocompletes available options for current state, so cycle <Tab> if you forget any name
 
 ## configuration
-
-# installation
-
-> [!IMPORTANT]
-> the release zip provided is a tech demo for linux, there are no official releases yet
-
- * download the internal demo bundle from [here](https://github.com/hexedtech/codemp-nvim/releases/tag/v0.1)
- * place the whole `codemp` folder under your `.config/nvim/lua` directory
- * add `CODEMP = require('codemp')` at the end of your `init.lua`
 `codemp-nvim` reads some global vim variables for configuration:
  * `vim.g.codemp_username` will be used when connecting instead of prompting for username
  * `vim.g.codemp_password` will be used when connecting instead of prompting for password
