@@ -1,20 +1,13 @@
-# codemp-nvim
+[![codemp](https://codemp.dev/static/banner.png)](https://codemp.dev)
 
-<a href="https://codemp.dev"><img alt="codemp logo" align="center" src="https://codemp.dev/codemp-t.png" height="100" /></a>
+> `codemp` is a **collaborative** text editing solution to work remotely.
 
-### code multiplexer for neovim
-
-> CodeMP is a **collaborative** text editing plugin to work remotely.
 It seamlessly integrates in your editor providing remote cursors and instant text synchronization,
 as well as a remote virtual workspace for you and your team.
 
-> CodeMP is build with state-of-the-art CRDT technology, guaranteeing eventual consistency.
-This means everyone in a workspace will always be working on the exact same file _eventually_:
-even under unreliable networks or constrained resources, the underlying CRDT will always reach a 
-convergent state across all users. Even with this baseline, CodeMP's proto is optimized for speed 
-and low network footprint, meaning even slow connections can provide stable real-time editing.
+# codemp-nvim
 
-This is the reference codemp neovim plugin maintained by [hexedtech](https://hexed.technology)
+This is the reference codemp [neovim](https://neovim.io) plugin maintained by [hexedtech](https://hexed.technology)
 
 # usage
 
