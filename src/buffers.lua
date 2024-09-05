@@ -78,12 +78,13 @@ local function attach(name, buffer, content)
 			end
 		end
 	end))
-	controller:callback(function (_controller) async:send() end)
-	vim.defer_fn(function() async:send() end, 500) -- force a try_recv after 500ms
 
 	local remote_content = controller:content():await()
 	ticks[buffer] = vim.api.nvim_buf_get_changedtick(buffer)
 	utils.buffer.set_content(buffer, remote_content)
+
+	controller:callback(function (_controller) async:send() end)
+	vim.defer_fn(function() async:send() end, 500) -- force a try_recv after 500ms
 
 	print(" ++ attached to buffer " .. name)
 	return controller
