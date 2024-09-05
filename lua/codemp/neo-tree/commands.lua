@@ -3,8 +3,8 @@ local utils = require("neo-tree.utils")
 local manager = require("neo-tree.sources.manager")
 local session = require("codemp.session")
 local renderer = require("neo-tree.ui.renderer")
-local ws_manager = require("codemp.workspace")
 local buf_manager = require("codemp.buffers")
+local ws_manager = require("codemp.workspace")
 local client_manager = require("codemp.client")
 
 local M = {}
