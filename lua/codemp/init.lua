@@ -3,12 +3,12 @@ local session = nil
 local native = nil
 local timer = nil
 
-local function setup(opts)
+local function setup(_opts)
 	local path = vim.fn.stdpath('data') .. '/codemp/'
 	if vim.fn.isdirectory(path) == 0 then
 		vim.fn.mkdir(path, 'p')
 	end
-	
+
 	if native == nil then
 		native = require('codemp.loader').load() -- make sure we can load the native library correctly, otherwise no point going forward
 		--native.logger(function (msg)
@@ -35,9 +35,9 @@ local function setup(opts)
 			}
 		)
 	end
-	
+
 	local timer_interval = vim.g.codemp_callback_interval or 100
-	
+
 	if timer == nil then
 		timer = vim.loop.new_timer()
 		timer:start(timer_interval, timer_interval, function()
@@ -54,11 +54,6 @@ local function setup(opts)
 	return {
 		native = native,
 		session = session,
-		buffers = require('codemp.buffers'),
-		workspace = require('codemp.workspace'),
-		window = require('codemp.window'),
-		utils = require('codemp.utils'),
-		logger = native.logger,
 		rt = rt,
 		callbacks_timer = timer,
 	}
