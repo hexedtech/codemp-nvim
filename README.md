@@ -83,15 +83,15 @@ MP command autocompletes available options for current state, so cycle <Tab> if 
  * `vim.g.codemp_neo_tree` will enable the neo-tree window, instead of the crude integrated one
 
 ## building
-this plugin relies on the native codemp lua bindings: just compile the main `codemp` project with `lua` feature enabled 
-and place a `lua.so` or `lua.dll` together with the plugin lua files while bundling
+this plugin relies on the native codemp lua bindings: just compile the main `codemp` project with `lua` feature enabled, rename the
+output library into `native.so` (or `.dll` or `.dylib`) and place it together with the plugin lua files while bundling
 
 ```
 .config/
   |-nvim/
   :  |-lua/
   :  :  |-codemp/
-  :  :  :  |- lua.(so|dll)
+  :  :  :  |- native.(so|dll|dylib)
   :  :  :  |- init.lua
   :  :  :  :   ...
 ```
