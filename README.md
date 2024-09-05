@@ -53,7 +53,6 @@ after a workspace is joined, more commands become available:
 MP command autocompletes available options for current state, so cycle <Tab> if you forget any name
 
 ## configuration
-it's possible to configure global `vim.g.codemp_username` and a `vim.g.codemp_password` which will be used when connecting
 
 # installation
 
@@ -63,6 +62,10 @@ it's possible to configure global `vim.g.codemp_username` and a `vim.g.codemp_pa
  * download the internal demo bundle from [here](https://github.com/hexedtech/codemp-nvim/releases/tag/v0.1)
  * place the whole `codemp` folder under your `.config/nvim/lua` directory
  * add `CODEMP = require('codemp')` at the end of your `init.lua`
+`codemp-nvim` reads some global vim variables for configuration:
+ * `vim.g.codemp_username` will be used when connecting instead of prompting for username
+ * `vim.g.codemp_password` will be used when connecting instead of prompting for password
+ * `vim.g.codemp_neo_tree` will enable the neo-tree window, instead of the crude integrated one
 
 ## building
 this plugin relies on the native codemp lua bindings: just compile the main `codemp` project with `lua` feature enabled 
