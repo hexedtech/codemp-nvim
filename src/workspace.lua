@@ -89,18 +89,18 @@ local function join(workspace)
 	register_cursor_handler(ws)
 
 	-- TODO this is temporary and ad-hoc
-	ws:callback(function (event)
-		if event.type == "leave" then
-			if buffers.users[event.value] ~= nil then
-				vim.schedule(function ()
-					vim.api.nvim_buf_clear_namespace(buffers.users[event.value], user_hl[event.value].ns, 0, -1)
-					buffers.users[event.value] = nil
-					user_hl[event.value] = nil
-				end)
-			end
-		end
-		vim.schedule(function() window.update() end)
-	end)
+	-- ws:callback(function (event)
+	-- 	if event.type == "leave" then
+	-- 		if buffers.users[event.value] ~= nil then
+	-- 			vim.schedule(function ()
+	-- 				vim.api.nvim_buf_clear_namespace(buffers.users[event.value], user_hl[event.value].ns, 0, -1)
+	-- 				buffers.users[event.value] = nil
+	-- 				user_hl[event.value] = nil
+	-- 			end)
+	-- 		end
+	-- 	end
+	-- 	vim.schedule(function() window.update() end)
+	-- end)
 
 	session.workspace = ws
 	window.update()
