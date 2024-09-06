@@ -44,8 +44,9 @@ M.open = function(state, path, extra)
 	end
 	if selected.type == "buffer" then
 		local window = utils.get_appropriate_window(state)
+		local buf = vim.api.nvim_win_get_buf(window)
 		vim.api.nvim_set_current_win(window)
-		buf_manager.attach(selected.name)
+		buf_manager.attach(selected.name, buf)
 		return
 	end
 	if selected.type == "user" then
