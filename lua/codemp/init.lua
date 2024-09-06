@@ -4,6 +4,7 @@ if CODEMP == nil then
 		rt = nil,
 		session = nil,
 		native = nil,
+		timer = nil,
 		config = {
 			neo_tree = false,
 			timer_interval = 100,
@@ -43,9 +44,9 @@ if CODEMP == nil then
 				)
 			end
 
-			if timer == nil then
-				timer = vim.loop.new_timer()
-				timer:start(CODEMP.config.timer_interval, CODEMP.config.timer_interval, function()
+			if CODEMP.timer == nil then
+				CODEMP.timer = vim.loop.new_timer()
+				CODEMP.timer:start(CODEMP.config.timer_interval, CODEMP.config.timer_interval, function()
 					while true do
 						local cb = CODEMP.native.poll_callback()
 						if cb == nil then break end
