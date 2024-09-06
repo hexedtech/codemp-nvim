@@ -87,6 +87,7 @@ MP command autocompletes available options for current state, so cycle <Tab> if 
 opts = {
 	neo_tree = false, -- enable neo-tree integration
 	timer_interval = 100, -- poll for codemp callbacks every __ ms
+	debug = false, -- print text operations as they happen
 }
 ```
 

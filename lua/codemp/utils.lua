@@ -158,7 +158,9 @@ local function buffer_set_content(buf, content, first, last)
 		else
 			content_array = vim.split(content, "\n", {trimempty=false})
 		end
-		-- print(string.format("set [%s..%s::'%s'] -> start(row:%s col:%s) end(row:%s, col:%s)", first, last, content, first_row, first_col, last_row, last_col))
+		if CODEMP.config.debug then
+			print(string.format("nvim_buf_set_text [%s..%s::'%s'] -> start(row:%s col:%s) end(row:%s, col:%s)", first, last, content, first_row, first_col, last_row, last_col))
+		end
 		vim.api.nvim_buf_set_text(buf, first_row, first_col, last_row, last_col, content_array)
 	end
 end

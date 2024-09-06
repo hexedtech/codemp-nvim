@@ -42,10 +42,10 @@ local function attach(name, buffer, content)
 		on_bytes = function(_, buf, tick, start_row, start_col, start_offset, old_end_row, old_end_col, old_end_byte_len, new_end_row, new_end_col, new_byte_len)
 			if tick <= ticks[buf] then return end
 			if id_buffer_map[buf] == nil then return true end -- unregister callback handler
-			print(string.format(
+			if CODEMP.config.debug then print(string.format(
 				"start(row:%s, col:%s) offset:%s end(row:%s, col:%s new(row:%s, col:%s)) len(old:%s, new:%s)",
 				start_row, start_col, start_offset, old_end_row, old_end_col, new_end_row, new_end_col, old_end_byte_len, new_byte_len
-			))
+			)) end
 			local change_content
 			if new_byte_len == 0 then
 				change_content = ""
@@ -55,7 +55,9 @@ local function attach(name, buffer, content)
 					'\n'
 				)
 			end
-			print(string.format("sending: %s %s %s %s -- '%s'", start_row, start_col, start_row + new_end_row, start_col + new_end_col, change_content))
+			if CODEMP.config.debug then
+				print(string.format("sending: %s %s %s %s -- '%s'", start_row, start_col, start_row + new_end_row, start_col + new_end_col, change_content))
+			end
 			controller:send(start_offset, start_offset + old_end_byte_len, change_content):await()
 		end,
 	})
@@ -65,7 +67,9 @@ local function attach(name, buffer, content)
 			local event = controller:try_recv():await()
 			if event == nil then break end
 			ticks[buffer] = vim.api.nvim_buf_get_changedtick(buffer)
-			print(" ~~ applying change ~~ " .. event.first .. ".." .. event.last .. "::[" .. event.content .. "]")
+			if CODEMP.config.debug then
+				print(" ~~ applying change ~~ " .. event.first .. ".." .. event.last .. "::[" .. event.content .. "]")
+			end
 			utils.buffer.set_content(buffer, event.content, event.first, event.last)
 			if event.hash ~= nil then
 				if utils.hash(utils.buffer.get_content(buffer)) ~= event.hash then

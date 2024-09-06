@@ -8,6 +8,7 @@ if CODEMP == nil then
 		config = {
 			neo_tree = false,
 			timer_interval = 100,
+			debug = false,
 		},
 		setup = function (opts)
 			CODEMP.config = vim.tbl_extend('force', CODEMP.config, opts)
