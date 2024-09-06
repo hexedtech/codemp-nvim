@@ -19,9 +19,13 @@ Note that the native codemp lua library will be downloaded automatically on each
 ## neo-tree integration
 `codemp-nvim` integrates with [neo-tree](https://github.com/nvim-neo-tree/neo-tree.nvim) to provide a rich and intuitive file tree.
 
-To enable this integration, add `vim.g.codemp_neo_tree = true` in your `init.lua` and add `codemp` as a neo-tree source:
+To enable this integration, add `neo_tree = true` in plugin `opts` and add `codemp` as a neo-tree source:
 
 ```lua
+{
+	"hexedtech/codemp-nvim",
+	opts = { neo_tree = true },
+},
 {
 	"nvim-neo-tree/neo-tree.nvim",
 	dependencies = { "hexedtech/codemp-nvim" },
@@ -77,10 +81,18 @@ after a workspace is joined, more commands become available:
 MP command autocompletes available options for current state, so cycle <Tab> if you forget any name
 
 ## configuration
+`codemp-nvim` gets most of its configuration from `setup()` options. If you're using `lazy.nvim`, just place these in the `opts` table in your spec, otherwise be sure to `require('codemp').setup({...})`.
+
+```lua
+opts = {
+	neo_tree = false,
+	callback_interval = 100, -- ms
+}
+```
+
 `codemp-nvim` reads some global vim variables for configuration:
  * `vim.g.codemp_username` will be used when connecting instead of prompting for username
  * `vim.g.codemp_password` will be used when connecting instead of prompting for password
- * `vim.g.codemp_neo_tree` will enable the neo-tree window, instead of the crude integrated one
 
 ## building
 this plugin relies on the native codemp lua bindings: just compile the main `codemp` project with `lua` feature enabled, rename the
