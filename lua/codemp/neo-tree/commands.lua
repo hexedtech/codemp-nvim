@@ -56,12 +56,24 @@ M.open = function(state, path, extra)
 end
 
 M.add = function(_state)
-	if session.workspace == nil then error("not in a workspace") end
-	vim.ui.input({ prompt = "name" }, function(input)
-		if input == nil or input == "" then return end
-		session.workspace:create_buffer(input):await()
-		manager.refresh("codemp")
-	end)
+	if session.client == nil then
+		vim.ui.input({ prompt = "server address" }, function(input)
+			if input == nil or input == "" then return end
+			client_manager.connect(input)
+		end)
+	elseif session.workspace == nil then
+		vim.ui.input({ prompt = "workspace name" }, function(input)
+			if input == nil or input == "" then return end
+			session.client:create_workspace(input):await()
+			manager.refresh("codemp")
+		end)
+	else
+		vim.ui.input({ prompt = "buffer path" }, function(input)
+			if input == nil or input == "" then return end
+			session.workspace:create_buffer(input):await()
+			manager.refresh("codemp")
+		end)
+	end
 end
 
 cc._add_common_commands(M)
