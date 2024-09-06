@@ -19,12 +19,11 @@ local function attach(name, buffer, content, nowait)
 		error("already attached to buffer " .. name)
 	end
 	if buffer == nil then
-		buffer = vim.api.nvim_create_buf(true, true)
-		vim.api.nvim_set_option_value('fileformat', 'unix', { buf = buffer })
-		-- vim.api.nvim_buf_set_option(buffer, 'filetype', 'codemp') -- TODO get from codemp?
-		vim.api.nvim_buf_set_name(buffer, name)
+		buffer = vim.api.nvim_create_buf(true, false)
 		vim.api.nvim_set_current_buf(buffer)
 	end
+	vim.api.nvim_set_option_value('fileformat', 'unix', { buf = buffer })
+	vim.api.nvim_buf_set_name(buffer, name)
 	local controller = session.workspace:attach_buffer(name):await()
 	if not nowait then
 		controller:poll():await() -- wait for current state to get synched
