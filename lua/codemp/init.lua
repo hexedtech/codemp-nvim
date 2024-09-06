@@ -1,64 +1,64 @@
-local rt = nil
-local session = nil
-local native = nil
-local timer = nil
+if CODEMP == nil then
+	---@class CodempGlobal
+	CODEMP = {
+		rt = nil,
+		session = nil,
+		native = nil,
+		config = {
+			neo_tree = false,
+			callback_interval = 100,
+		},
+		setup = function (opts)
+			CODEMP.config = vim.tbl_extend('force', CODEMP.config, opts)
 
-local function setup(_opts)
-	local path = vim.fn.stdpath('data') .. '/codemp/'
-	if vim.fn.isdirectory(path) == 0 then
-		vim.fn.mkdir(path, 'p')
-	end
-
-	if native == nil then
-		native = require('codemp.loader').load() -- make sure we can load the native library correctly, otherwise no point going forward
-		--native.logger(function (msg)
-		--	vim.schedule(function () print(msg) end)
-		--end, true)
-	end
-
-	if session == nil then
-		session = require('codemp.session')
-	end
-
-	if rt == nil then
-		rt = native.spawn_runtime_driver() -- spawn thread to drive tokio runtime
-		vim.api.nvim_create_autocmd(
-			{"ExitPre"},
-			{
-				callback = function (_ev)
-					if session.client ~= nil then
-						print(" xx disconnecting codemp client")
-						session.client = nil
-					end
-					rt:stop()
-				end
-			}
-		)
-	end
-
-	local timer_interval = vim.g.codemp_callback_interval or 100
-
-	if timer == nil then
-		timer = vim.loop.new_timer()
-		timer:start(timer_interval, timer_interval, function()
-			while true do
-				local cb = native.poll_callback()
-				if cb == nil then break end
-				cb()
+			local path = vim.fn.stdpath('data') .. '/codemp/'
+			if vim.fn.isdirectory(path) == 0 then
+				vim.fn.mkdir(path, 'p')
 			end
-		end)
-	end
 
-	require('codemp.command')
+			if CODEMP.native == nil then
+				CODEMP.native = require('codemp.loader').load() -- make sure we can load the native library correctly, otherwise no point going forward
+				--native.logger(function (msg)
+				--	vim.schedule(function () print(msg) end)
+				--end, true)
+			end
 
-	return {
-		native = native,
-		session = session,
-		rt = rt,
-		callbacks_timer = timer,
+			if CODEMP.session == nil then
+				CODEMP.session = require('codemp.session')
+			end
+
+			if CODEMP.rt == nil then
+				CODEMP.rt = native.spawn_runtime_driver() -- spawn thread to drive tokio runtime
+				vim.api.nvim_create_autocmd(
+					{"ExitPre"},
+					{
+						callback = function (_ev)
+							if CODEMP.session.client ~= nil then
+								print(" xx disconnecting codemp client")
+								CODEMP.session.client = nil
+							end
+							CODEMP.rt:stop()
+						end
+					}
+				)
+			end
+
+			if timer == nil then
+				timer = vim.loop.new_timer()
+				timer:start(CODEMP.config.timer_interval, CODEMP.config.timer_interval, function()
+					while true do
+						local cb = CODEMP.native.poll_callback()
+						if cb == nil then break end
+						cb()
+					end
+				end)
+			end
+
+			require('codemp.command')
+
+			return CODEMP
+		end,
 	}
 end
 
-return {
-	setup = setup
-}
+return CODEMP

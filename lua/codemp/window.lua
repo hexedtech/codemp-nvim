@@ -1,4 +1,4 @@
-if vim.g.codemp_neo_tree then
+if CODEMP.config.neo_tree then
 	return {
 		update = function () require("neo-tree.sources.manager").refresh("codemp") end,
 		init = function () end,
