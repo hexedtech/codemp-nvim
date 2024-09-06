@@ -44,8 +44,12 @@ M.open = function(state, path, extra)
 	end
 	if selected.type == "buffer" then
 		local window = utils.get_appropriate_window(state)
-		local buf = vim.api.nvim_create_buf(true, false)
 		vim.api.nvim_set_current_win(window)
+		if buf_manager.map_rev[selected.name] ~= nil then
+			vim.api.nvim_win_set_buf(window, buf_manager.map_rev[selected.name])
+			return
+		end
+		local buf = vim.api.nvim_create_buf(true, false)
 		vim.api.nvim_win_set_buf(window, buf)
 		buf_manager.attach(selected.name, buf)
 		return
