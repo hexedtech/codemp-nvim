@@ -137,7 +137,6 @@ local function create(buffer)
 	session.workspace:create_buffer(buffer):await()
 end
 
-
 return {
 	sync = sync,
 	attach = attach,
