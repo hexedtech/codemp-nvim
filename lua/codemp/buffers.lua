@@ -12,8 +12,9 @@ local ticks = {}
 ---@param name string name of buffer to attach to
 ---@param buffer? integer if provided, use given buffer (will clear content)
 ---@param content? string if provided, set this content after attaching
+---@param nowait? boolean skip waiting for initial content sync
 ---@return BufferController
-local function attach(name, buffer, content)
+local function attach(name, buffer, content, nowait)
 	if buffer_id_map[name] ~= nil then
 		error("already attached to buffer " .. name)
 	end
@@ -25,6 +26,9 @@ local function attach(name, buffer, content)
 		vim.api.nvim_set_current_buf(buffer)
 	end
 	local controller = session.workspace:attach_buffer(name):await()
+	if not nowait then
+		controller:poll():await() -- wait for current state to get synched
+	end
 
 	-- TODO map name to uuid
 
