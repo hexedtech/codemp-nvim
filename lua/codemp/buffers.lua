@@ -32,10 +32,6 @@ local function attach(name, buffer, content)
 	buffer_id_map[name] = buffer
 	ticks[buffer] = 0
 
-	if content ~= nil then
-		local _ = controller:send(0, 0, content) -- no need to await
-	end
-
 	-- hook serverbound callbacks
 	-- TODO breaks when deleting whole lines at buffer end
 	vim.api.nvim_buf_attach(buffer, false, {
@@ -84,8 +80,13 @@ local function attach(name, buffer, content)
 	end))
 
 	local remote_content = controller:content():await()
-	ticks[buffer] = vim.api.nvim_buf_get_changedtick(buffer)
-	utils.buffer.set_content(buffer, remote_content)
+	if content ~= nil then
+		-- TODO this may happen too soon!!
+		local _ = controller:send(0, #remote_content, content) -- no need to await
+	else
+		ticks[buffer] = vim.api.nvim_buf_get_changedtick(buffer)
+		utils.buffer.set_content(buffer, remote_content)
+	end
 
 	controller:callback(function (_controller) async:send() end)
 	vim.defer_fn(function() async:send() end, 500) -- force a try_recv after 500ms
