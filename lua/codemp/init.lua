@@ -18,7 +18,7 @@ if CODEMP == nil then
 
 			if CODEMP.native == nil then
 				CODEMP.native = require('codemp.loader').load() -- make sure we can load the native library correctly, otherwise no point going forward
-				--native.logger(function (msg)
+				--CODEMP.native.logger(function (msg)
 				--	vim.schedule(function () print(msg) end)
 				--end, true)
 			end
@@ -28,7 +28,7 @@ if CODEMP == nil then
 			end
 
 			if CODEMP.rt == nil then
-				CODEMP.rt = native.spawn_runtime_driver() -- spawn thread to drive tokio runtime
+				CODEMP.rt = CODEMP.native.spawn_runtime_driver() -- spawn thread to drive tokio runtime
 				vim.api.nvim_create_autocmd(
 					{"ExitPre"},
 					{
