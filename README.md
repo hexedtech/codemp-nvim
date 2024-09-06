@@ -85,8 +85,8 @@ MP command autocompletes available options for current state, so cycle <Tab> if 
 
 ```lua
 opts = {
-	neo_tree = false,
-	callback_interval = 100, -- ms
+	neo_tree = false, -- enable neo-tree integration
+	timer_interval = 100, -- poll for codemp callbacks every __ ms
 }
 ```
 

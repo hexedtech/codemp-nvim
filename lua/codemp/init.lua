@@ -6,7 +6,7 @@ if CODEMP == nil then
 		native = nil,
 		config = {
 			neo_tree = false,
-			callback_interval = 100,
+			timer_interval = 100,
 		},
 		setup = function (opts)
 			CODEMP.config = vim.tbl_extend('force', CODEMP.config, opts)
