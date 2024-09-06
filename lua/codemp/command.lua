@@ -77,7 +77,7 @@ local joined_actions = {
 		buffers.create(path)
 	end,
 
-	share = function(path)
+	share = function(path, bang)
 		if path == nil then
 			local cwd = vim.fn.getcwd()
 			local full_path = vim.fn.expand("%:p")
@@ -85,7 +85,7 @@ local joined_actions = {
 		end
 		if #path > 0 then
 			local buf = vim.api.nvim_get_current_buf()
-			buffers.create(path)
+			if not bang then buffers.create(path) end
 			local content = utils.buffer.get_content(buf)
 			buffers.attach(path, buf, content)
 			window.update() -- TODO would be nice to do automatically inside
@@ -109,7 +109,9 @@ local joined_actions = {
 
 	attach = function(path, bang)
 		if path == nil then error("missing buffer name") end
-		buffers.attach(path)
+		local buffer = nil
+		if bang then buffer = vim.api.nvim_get_current_buf() end
+		buffers.attach(path, buffer)
 	end,
 
 	detach = function(path)
