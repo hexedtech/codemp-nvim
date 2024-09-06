@@ -10,17 +10,13 @@ local user_buffer_name = {}
 local ticks = {}
 
 ---@param name string name of buffer to attach to
----@param buffer? integer if provided, use given buffer (will clear content)
+---@param buffer integer buffer to use for attaching (will clear content)
 ---@param content? string if provided, set this content after attaching
 ---@param nowait? boolean skip waiting for initial content sync
 ---@return BufferController
 local function attach(name, buffer, content, nowait)
 	if buffer_id_map[name] ~= nil then
 		error("already attached to buffer " .. name)
-	end
-	if buffer == nil then
-		buffer = vim.api.nvim_create_buf(true, false)
-		vim.api.nvim_set_current_buf(buffer)
 	end
 	vim.api.nvim_set_option_value('fileformat', 'unix', { buf = buffer })
 	vim.api.nvim_buf_set_name(buffer, name)

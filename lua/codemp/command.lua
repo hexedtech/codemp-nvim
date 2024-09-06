@@ -110,7 +110,12 @@ local joined_actions = {
 	attach = function(path, bang)
 		if path == nil then error("missing buffer name") end
 		local buffer = nil
-		if bang then buffer = vim.api.nvim_get_current_buf() end
+		if bang then
+			buffer = vim.api.nvim_get_current_buf()
+		else
+			buffer = vim.api.nvim_create_buf(true, false)
+			vim.api.nvim_set_current_buf(buffer)
+		end
 		buffers.attach(path, buffer)
 	end,
 
