@@ -13,11 +13,6 @@ if CODEMP == nil then
 		setup = function (opts)
 			CODEMP.config = vim.tbl_extend('force', CODEMP.config, opts)
 
-			local path = vim.fn.stdpath('data') .. '/codemp/'
-			if vim.fn.isdirectory(path) == 0 then
-				vim.fn.mkdir(path, 'p')
-			end
-
 			if CODEMP.native == nil then
 				CODEMP.native = require('codemp.loader').load() -- make sure we can load the native library correctly, otherwise no point going forward
 				--CODEMP.native.logger(function (msg)
@@ -54,9 +49,10 @@ if CODEMP == nil then
 						cb()
 					end
 				end)
+
+				require('codemp.command') -- not really related but should only happen once
 			end
 
-			require('codemp.command')
 
 			return CODEMP
 		end,
