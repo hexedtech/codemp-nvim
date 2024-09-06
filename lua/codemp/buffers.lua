@@ -22,7 +22,7 @@ local function attach(name, buffer, content, nowait)
 		buffer = vim.api.nvim_create_buf(true, true)
 		vim.api.nvim_set_option_value('fileformat', 'unix', { buf = buffer })
 		-- vim.api.nvim_buf_set_option(buffer, 'filetype', 'codemp') -- TODO get from codemp?
-		vim.api.nvim_buf_set_name(buffer, "codemp::" .. name)
+		vim.api.nvim_buf_set_name(buffer, name)
 		vim.api.nvim_set_current_buf(buffer)
 	end
 	local controller = session.workspace:attach_buffer(name):await()
