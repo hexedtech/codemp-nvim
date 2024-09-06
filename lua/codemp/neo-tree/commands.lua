@@ -72,6 +72,23 @@ M.move = function(state, path, extra)
 	error("only buffers can be moved to current file")
 end
 
+M.delete = function(state, path, extra)
+	local selected = state.tree:get_node()
+	if selected.type == "buffer" then
+		if session.workspace == nil then error("join a workspace first") end
+		session.workspace:delete_buffer(selected.name):await()
+		print("deleted buffer " .. selected.name)
+		manager.refresh("codemp")
+	elseif selected.type == "workspace" then
+		if session.client == nil then error("connect to server first") end
+		session.client:delete_workspace(selected.name):await()
+		print("deleted workspace " .. selected.name)
+		manager.refresh("codemp")
+	else
+		print("/!\\ can only delete buffers and workspaces")
+	end
+end
+
 M.add = function(_state)
 	if session.client == nil then
 		vim.ui.input({ prompt = "server address" }, function(input)
@@ -91,6 +108,7 @@ M.add = function(_state)
 			manager.refresh("codemp")
 		end)
 	end
+	manager.refresh("codemp")
 end
 
 cc._add_common_commands(M)
