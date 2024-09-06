@@ -90,7 +90,8 @@ local function attach(name, buffer, content, nowait)
 	controller:callback(function (_controller) async:send() end)
 	vim.defer_fn(function() async:send() end, 500) -- force a try_recv after 500ms
 
-	vim.filetype.match({ buf = buffer })
+	local filetype = vim.filetype.match({ buf = buffer })
+	vim.api.nvim_set_option_value("filetype", filetype, { buf = buffer })
 	print(" ++ attached to buffer " .. name)
 	return controller
 end
