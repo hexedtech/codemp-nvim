@@ -125,11 +125,22 @@ local function sync(buffer)
 	print(" !! buffer not managed")
 end
 
+local function create(buffer)
+	if buffer == nil then
+		buffer = vim.fn.expand("%p")
+	end
+	if session.workspace == nil then
+		error("join a workspace first")
+	end
+	session.workspace:create_buffer(buffer):await()
+end
+
 
 return {
 	sync = sync,
 	attach = attach,
 	detach = detach,
+	create = create,
 	map = id_buffer_map,
 	map_rev = buffer_id_map,
 	ticks = ticks,
