@@ -21,9 +21,9 @@ M.icon = function(config, node, state)
 	local icon, highlight
 	if node.type == "buffer" then
 		if codemp_buffers.map_rev[node.name] ~= nil then
-			icon = "+ "
+			icon = ">"
 		else
-			icon = "- "
+			icon = "+"
 		end
 		highlight = highlights.FILE_ICON
 	elseif node.type == "directory" then
@@ -31,13 +31,13 @@ M.icon = function(config, node, state)
 		highlight = highlights.DIRECTORY_ICON
 	elseif node.type == "root" then
 		if node:is_expanded() then
-			icon = "| "
+			icon = "┬"
 		else
-			icon = "> "
+			icon = "─"
 		end
 		highlight = highlights.DIRECTORY_ICON
 	elseif node.type == "workspace" then
-		icon = "* "
+		icon = "*"
 		if node.extra.owned then
 			highlight = highlights.GIT_STAGED
 		else
@@ -50,7 +50,7 @@ M.icon = function(config, node, state)
 		icon = "$"
 		highlight = highlights.GIT_STAGED
 	elseif node.type == "button" then
-		icon = "  "
+		icon = " "
 		highlight = highlights.NORMAL
 	end
 
@@ -98,6 +98,72 @@ M.users = function(config, node, state)
 		end
 	end
 	return out
+end
+
+
+-- this is basically copy-pasted from neo-tree source to remove the 0-depth case
+-- https://github.com/nvim-neo-tree/neo-tree.nvim/blob/0774fa2085c62a147fcc7b56f0ac37053cc80217/lua/neo-tree/sources/common/components.lua#L383
+M.indent = function(config, node, state)
+	if not state.skip_marker_at_level then
+		state.skip_marker_at_level = {}
+	end
+
+	local strlen = vim.fn.strdisplaywidth
+	local skip_marker = state.skip_marker_at_level
+	local indent_size = config.indent_size or 2
+	local padding = config.padding or 0
+	local level = node.level
+	local with_markers = config.with_markers
+	local with_expanders = config.with_expanders == nil and file_nesting.is_enabled()
+		or config.with_expanders
+	local marker_highlight = config.highlight or highlights.INDENT_MARKER
+	local expander_highlight = config.expander_highlight or config.highlight or highlights.EXPANDER
+
+	local function get_expander()
+		if with_expanders and utils.is_expandable(node) then
+			return node:is_expanded() and (config.expander_expanded or "")
+				or (config.expander_collapsed or "")
+		end
+	end
+
+	local indent_marker = config.indent_marker or "│"
+	local last_indent_marker = config.last_indent_marker or "└"
+
+	skip_marker[level] = node.is_last_child
+	local indent = {}
+	if padding > 0 then
+		table.insert(indent, { text = string.rep(" ", padding) })
+	end
+
+	for i = 1, level do
+		local char = ""
+		local spaces_count = indent_size
+		local highlight = nil
+
+		if i > 1 and not skip_marker[i] or i == level then
+			spaces_count = spaces_count - 1
+			char = indent_marker
+			highlight = marker_highlight
+			if i == level then
+				local expander = get_expander()
+				if expander then
+					char = expander
+					highlight = expander_highlight
+				elseif node.is_last_child then
+					char = last_indent_marker
+					spaces_count = spaces_count - (vim.api.nvim_strwidth(last_indent_marker) - 1)
+				end
+			end
+		end
+
+		table.insert(indent, {
+			text = char .. string.rep(" ", spaces_count),
+			highlight = highlight,
+			no_next_padding = true,
+		})
+	end
+
+	return indent
 end
 
 return vim.tbl_deep_extend("force", common, M)

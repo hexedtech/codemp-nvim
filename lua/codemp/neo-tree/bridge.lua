@@ -110,14 +110,16 @@ end
 M.update_state = function(state)
 	---@type Item[]
 	local root = {
-		id = "codemp",
-		name = "codemp",
-		type = "title",
-		extra = {},
-		children = {},
+		{
+			id = "codemp",
+			name = "codemp",
+			type = "title",
+			extra = {},
+		}
 	}
 
 	if codemp.workspace ~= nil then
+		table.insert(root, spacer())
 		local ws_section = new_root("session #" .. codemp.workspace.name)
 		for i, path in ipairs(codemp.workspace:filetree()) do
 			table.insert(ws_section.children, new_item(codemp.workspace.name, path))
@@ -129,31 +131,30 @@ M.update_state = function(state)
 		end
 		table.insert(ws_section.children, spacer())
 		table.insert(ws_section.children, usr_section)
-		table.insert(root.children, spacer())
-		table.insert(root.children, ws_section)
+		table.insert(root, ws_section)
 	end
 
 	if codemp.client ~= nil then
+		table.insert(root, spacer())
 		local ws_section = new_root("workspaces")
 		for _, ws in ipairs(codemp.available) do
 			table.insert(ws_section.children, new_workspace(ws.name, ws.owned))
 		end
-		table.insert(root.children, spacer())
-		table.insert(root.children, ws_section)
+		table.insert(root, ws_section)
 
+		table.insert(root, spacer())
 		local status_section = new_root("client")
 		table.insert(status_section.children, new_entry("id", codemp.client.id))
 		table.insert(status_section.children, new_entry("name", codemp.client.username))
-		table.insert(root.children, spacer())
-		table.insert(root.children, status_section)
+		table.insert(root, status_section)
 	end
 
 	if codemp.client == nil then
-		table.insert(root.children, spacer())
-		table.insert(root.children, new_button("[connect]"))
+		table.insert(root, spacer())
+		table.insert(root, new_button("[connect]"))
 	end
 
-	renderer.show_nodes({ root }, state)
+	renderer.show_nodes(root, state)
 	for _, node in ipairs(state.tree:get_nodes()) do
 		node:expand()
 	end
