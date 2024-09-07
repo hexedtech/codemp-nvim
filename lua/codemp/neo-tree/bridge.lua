@@ -1,6 +1,5 @@
 local renderer = require("neo-tree.ui.renderer")
 local codemp = require("codemp.session")
-local cc = require("neo-tree.sources.common.commands")
 local buf_manager = require("codemp.buffers")
 
 local M = {}
@@ -87,28 +86,43 @@ end
 
 M.update_state = function(state)
 	---@type Item[]
-	local root = {}
+	local root = {
+		{
+			id = "codemp",
+			name = "codemp",
+			type = "title",
+			extra = {},
+		}
+	}
 
 	if codemp.workspace ~= nil then
-		root = {
-			new_root(codemp.client.username .. "@" .. codemp.workspace.name),
-			spacer(),
-			new_root("users"),
-			spacer(),
-		}
+		table.insert(root, spacer())
+		local ws_section = new_root("session #" .. codemp.workspace.name)
 		for i, path in ipairs(codemp.workspace:filetree()) do
-			table.insert(root[1].children, new_item(codemp.workspace.name, path))
+			table.insert(ws_section.children, new_item(codemp.workspace.name, path))
 		end
+
+		local usr_section = new_root("users")
 		for user, buffer in pairs(buf_manager.users) do
-			table.insert(root[3].children, new_user(codemp.workspace.name, user))
+			table.insert(usr_section.children, new_user(codemp.workspace.name, user))
 		end
-	elseif codemp.client ~= nil then
-		root = { new_root(codemp.client.username .. "@codemp") }
+		if #buf_manager.users > 0 then
+			table.insert(ws_section.children, spacer())
+			table.insert(ws_section.children, usr_section)
+		end
+		table.insert(root, ws_section)
+	end
+
+	if codemp.client ~= nil then
+		table.insert(root, spacer())
+		local ws_section = new_root("workspaces")
 		for _, ws in ipairs(codemp.available) do
-			table.insert(root[1].children, new_workspace(ws.name, ws.owned))
+			table.insert(ws_section.children, new_workspace(ws.name, ws.owned))
 		end
+		table.insert(root, ws_section)
 	else
-		root = { new_root("codemp") }
+		table.insert(root, spacer())
+		table.insert(root, new_root("[connect]"))
 	end
 
 	renderer.show_nodes(root, state)

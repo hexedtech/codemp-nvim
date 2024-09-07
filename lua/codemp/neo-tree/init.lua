@@ -15,6 +15,9 @@ end
 
 M.default_config = {
 	renderers = {
+		title = {
+			{ "name" },
+		},
 		spacer = {
 			{ "indent" },
 		},

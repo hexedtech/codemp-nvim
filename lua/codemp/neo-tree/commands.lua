@@ -14,9 +14,7 @@ M.open = function(state, path, extra)
 	local selected = state.tree:get_node()
 	if selected.type == "spacer" then return end
 	if selected.type == "root" then
-		if session.client ~= nil then
-			print(" +-+ connected to codemp as " .. session.client.username)
-		else
+		if selected.name == "[connect]" and session.client ~= nil then
 			client_manager.connect()
 		end
 		return

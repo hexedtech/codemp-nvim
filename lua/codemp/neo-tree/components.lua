@@ -30,7 +30,7 @@ M.icon = function(config, node, state)
 		icon = "= "
 		highlight = highlights.DIRECTORY_ICON
 	elseif node.type == "root" then
-		icon = "]| "
+		icon = "> "
 		highlight = highlights.DIRECTORY_ICON
 	elseif node.type == "workspace" then
 		icon = "= "
@@ -48,13 +48,17 @@ end
 
 M.name = function(config, node, state)
 	local highlight = config.highlight or highlights.FILE_NAME
-	if node.type == "root" then
+	local text = node.name
+	if node.type == "tutle" then
+		text = "::  " .. node.name .. "  ::"
+		highlight = highlights.PREVIEW
+	elseif node.type == "root" then
 		highlight = highlights.FLOAT_TITLE
 	elseif node.type == "workspace" then
 		highlight = highlights.SYMBOLIC_LINK_TARGET
 	end
 	return {
-		text = node.name,
+		text = text,
 		highlight = highlight,
 	}
 end
