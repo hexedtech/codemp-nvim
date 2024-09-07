@@ -23,7 +23,7 @@ M.open = function(state, path, extra)
 	if selected.type == "spacer" then return end
 	if selected.type == "title" then return end
 	if selected.type == "entry" then return end
-	if selected.type == "root" then toggle(selected) end
+	if selected.type == "root" then return toggle(selected) end
 	if selected.type == "button" then
 		if selected.name == "[connect]" and session.client == nil then
 			client_manager.connect()
