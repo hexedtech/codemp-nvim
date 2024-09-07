@@ -160,6 +160,9 @@ M.update_state = function(state)
 	renderer.show_nodes(root, state)
 	for _, node in ipairs(state.tree:get_nodes()) do
 		node:expand()
+		for _, child_node in ipairs(state.tree:get_nodes(node)) do
+			child_node:expand()
+		end
 	end
 end
 

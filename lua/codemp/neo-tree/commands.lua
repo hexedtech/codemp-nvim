@@ -14,6 +14,7 @@ local function toggle(node)
 	else
 		node:expand()
 	end
+	manager.refresh("codemp")
 end
 
 M.refresh = require("neo-tree.utils").wrap(manager.refresh, "codemp")
