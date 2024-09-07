@@ -48,7 +48,10 @@ M.icon = function(config, node, state)
 		highlight = codemp_utils.color(node.name)
 	elseif node.type == "entry" then
 		icon = "$"
-		highlight = highlight.GIT_STAGED
+		highlight = highlights.GIT_STAGED
+	elseif node.type == "button" then
+		icon = "  "
+		highlight = highlights.NORMAL
 	end
 
 	return {

@@ -14,7 +14,8 @@ M.open = function(state, path, extra)
 	local selected = state.tree:get_node()
 	if selected.type == "spacer" then return end
 	if selected.type == "title" then return end
-	if selected.type == "root" then
+	if selected.type == "root" then selected:toggle() end
+	if selected.type == "button" then
 		if selected.name == "[connect]" and session.client == nil then
 			client_manager.connect()
 		end

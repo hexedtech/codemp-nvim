@@ -49,6 +49,7 @@ M.default_config = {
 		},
 		button = {
 			{ "indent" },
+			{ "icon" },
 			{ "name" },
 		},
 	},
