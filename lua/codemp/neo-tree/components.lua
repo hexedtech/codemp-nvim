@@ -49,7 +49,7 @@ end
 M.name = function(config, node, state)
 	local highlight = config.highlight or highlights.FILE_NAME
 	local text = node.name
-	if node.type == "tutle" then
+	if node.type == "title" then
 		text = "::  " .. node.name .. "  ::"
 		highlight = highlights.PREVIEW
 	elseif node.type == "root" then

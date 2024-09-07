@@ -13,8 +13,9 @@ M.refresh = require("neo-tree.utils").wrap(manager.refresh, "codemp")
 M.open = function(state, path, extra)
 	local selected = state.tree:get_node()
 	if selected.type == "spacer" then return end
+	if selected.type == "title" then return end
 	if selected.type == "root" then
-		if selected.name == "[connect]" and session.client ~= nil then
+		if selected.name == "[connect]" and session.client == nil then
 			client_manager.connect()
 		end
 		return
