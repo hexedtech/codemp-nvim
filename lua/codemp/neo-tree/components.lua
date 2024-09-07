@@ -20,20 +20,20 @@ local M = {}
 M.icon = function(config, node, state)
 	local icon, highlight
 	if node.type == "buffer" then
-		icon = "- "
+		if codemp_buffers.map_rev[node.name] ~= nil then
+			icon = "+ "
+		else
+			icon = "- "
+		end
 		highlight = highlights.FILE_ICON
 	elseif node.type == "directory" then
 		icon = "= "
 		highlight = highlights.DIRECTORY_ICON
 	elseif node.type == "root" then
-		icon = "> "
-		highlight = highlights.FILE_STATS_HEADER
+		icon = "]| "
+		highlight = highlights.DIRECTORY_ICON
 	elseif node.type == "workspace" then
-		if node:is_expanded() then
-			icon = "| "
-		else
-			icon = "+ "
-		end
+		icon = "= "
 		highlight = highlights.SYMBOLIC_LINK_TARGET
 	elseif node.type == "user" then
 		icon = ":"
@@ -49,7 +49,7 @@ end
 M.name = function(config, node, state)
 	local highlight = config.highlight or highlights.FILE_NAME
 	if node.type == "root" then
-		highlight = highlights.ROOT_NAME
+		highlight = highlights.FLOAT_TITLE
 	elseif node.type == "workspace" then
 		highlight = highlights.SYMBOLIC_LINK_TARGET
 	end
@@ -74,7 +74,7 @@ M.users = function(config, node, state)
 			table.insert(out, {
 				text = " ",
 				highlight = codemp_utils.color(user),
-				align = "right",
+				align = "end",
 			})
 		end
 	end

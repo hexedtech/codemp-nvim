@@ -93,6 +93,7 @@ local function attach(name, buffer, content, nowait)
 	local filetype = vim.filetype.match({ buf = buffer })
 	vim.api.nvim_set_option_value("filetype", filetype, { buf = buffer })
 	print(" ++ attached to buffer " .. name)
+	require('codemp.window').update()
 	return controller
 end
 
@@ -106,6 +107,7 @@ local function detach(name)
 	vim.api.nvim_buf_delete(buffer, {})
 
 	print(" -- detached from buffer " .. name)
+	require('codemp.window').update()
 end
 
 ---@param buffer? integer if provided, sync given buffer id, otherwise sync current buf
@@ -135,6 +137,8 @@ local function create(buffer)
 		error("join a workspace first")
 	end
 	session.workspace:create_buffer(buffer):await()
+	print(" ++  created buffer " .. buffer)
+	require('codemp.window').update()
 end
 
 return {
