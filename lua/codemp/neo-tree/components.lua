@@ -68,7 +68,7 @@ M.name = function(config, node, state)
 		highlight = highlights.PREVIEW
 	elseif node.type == "root" or node.type == "button" then
 		text = " " .. node.name .. " "
-		highlight = highlights.FLOAT_TITLE
+		highlight = highlights.TAB_ACTIVE
 	end
 	return {
 		text = text,

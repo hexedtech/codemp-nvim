@@ -129,10 +129,8 @@ M.update_state = function(state)
 		for user, buffer in pairs(buf_manager.users) do
 			table.insert(usr_section.children, new_user(codemp.workspace.name, user))
 		end
-		if #buf_manager.users > 0 then
-			table.insert(ws_section.children, spacer())
-			table.insert(ws_section.children, usr_section)
-		end
+		table.insert(ws_section.children, spacer())
+		table.insert(ws_section.children, usr_section)
 		table.insert(root, ws_section)
 	end
 
