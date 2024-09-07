@@ -66,6 +66,17 @@ local function new_workspace(name, owned, expanded)
 	}
 end
 
+local function new_root(name)
+	return {
+		id = "codemp-tree-" .. name,
+		name = name,
+		type = "root",
+		extra = {},
+		children = {}
+	}
+end
+
+---@return Item
 local function spacer()
 	return {
 		id = "codemp-ws-spacer-" .. vim.fn.rand() % 1024,
@@ -75,52 +86,33 @@ local function spacer()
 end
 
 M.update_state = function(state)
-	---@type Item
-	local root
+	---@type Item[]
+	local root = {}
 
 	if codemp.workspace ~= nil then
 		root = {
-			id = "codemp",
-			name = codemp.client.username .. "@" .. codemp.workspace.name,
-			type = "root",
-			extra = {},
-			children = {}
+			new_root(codemp.client.username .. "@" .. codemp.workspace.name),
+			spacer(),
+			new_root("users"),
+			spacer(),
 		}
 		table.insert(root.children, spacer())
 		for i, path in ipairs(codemp.workspace:filetree()) do
-			table.insert(root.children, new_item(codemp.workspace.name, path))
+			table.insert(root[1].children, new_item(codemp.workspace.name, path))
 		end
-		table.insert(root.children, spacer())
 		for user, buffer in pairs(buf_manager.users) do
-			table.insert(root.children, new_user(codemp.workspace.name, user))
+			table.insert(root[3].children, new_user(codemp.workspace.name, user))
 		end
 	elseif codemp.client ~= nil then
-		root = {
-			id = "codemp",
-			name = codemp.client.username .. "@codemp",
-			type = "root",
-			extra = {},
-			children = {}
-		}
+		root = { new_root(codemp.client.username .. "@codemp") }
 		for _, ws in ipairs(codemp.available) do
-			local workspace = new_workspace(ws.name, ws.owned)
-
-			if codemp.workspace ~= nil and codemp.workspace.name == ws.name then
-			end
-
-			table.insert(root.children, workspace)
+			table.insert(root.children, new_workspace(ws.name, ws.owned))
 		end
 	else
-		root = {
-			id = "codemp",
-			name = "codemp",
-			type = "root",
-			extra = {},
-			children = {}
-		}
+		root = { new_root("codemp") }
 	end
 
-	renderer.show_nodes({ root }, state)
+	renderer.show_nodes(root, state)
 
 	if codemp.workspace ~= nil then
 		for _, node in ipairs(state.tree:get_nodes()) do
