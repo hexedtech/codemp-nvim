@@ -14,6 +14,8 @@ local highlights = require("neo-tree.ui.highlights")
 local common = require("neo-tree.sources.common.components")
 local codemp_utils = require("codemp.utils")
 local codemp_buffers = require("codemp.buffers")
+local utils = require("neo-tree.utils")
+local file_nesting = require("neo-tree.sources.common.file-nesting")
 
 local M = {}
 
