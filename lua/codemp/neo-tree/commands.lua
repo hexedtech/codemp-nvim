@@ -8,13 +8,22 @@ local client_manager = require("codemp.client")
 
 local M = {}
 
+local function toggle(node)
+	if node:is_expanded() then
+		node:collapse()
+	else
+		node:expand()
+	end
+end
+
 M.refresh = require("neo-tree.utils").wrap(manager.refresh, "codemp")
 
 M.open = function(state, path, extra)
 	local selected = state.tree:get_node()
 	if selected.type == "spacer" then return end
 	if selected.type == "title" then return end
-	if selected.type == "root" then selected:toggle() end
+	if selected.type == "entry" then return end
+	if selected.type == "root" then toggle(selected) end
 	if selected.type == "button" then
 		if selected.name == "[connect]" and session.client == nil then
 			client_manager.connect()
@@ -22,24 +31,14 @@ M.open = function(state, path, extra)
 		return
 	end
 	if selected.type == "workspace" then
-		if selected:is_expanded() then
-			vim.ui.input({ prompt = "disconnect from workspace?" }, function (input)
-				if input == nil then return end
-				if input ~= "y" then return end
-				ws_manager.leave()
-				selected:collapse()
-				manager.refresh("codemp")
-			end)
-		else
-			if session.workspace ~= nil and session.workspace.name ~= selected.name then
-				error("must leave current workspace first")
-			end
-			if session.workspace == nil then
-				ws_manager.join(selected.name)
-			end
-			selected:expand()
-			manager.refresh("codemp")
+		if session.workspace ~= nil and session.workspace.name ~= selected.name then
+			error("must leave current workspace first")
 		end
+		if session.workspace == nil then
+			ws_manager.join(selected.name)
+		end
+		selected:expand()
+		manager.refresh("codemp")
 		return
 	end
 	if selected.type == "buffer" then
@@ -74,7 +73,14 @@ end
 
 M.delete = function(state, path, extra)
 	local selected = state.tree:get_node()
-	if selected.type == "buffer" then
+	if selected.type == "root" and vim.startswith(selected.name, "#") then
+		vim.ui.input({ prompt = "disconnect from workspace?" }, function (input)
+			if input == nil then return end
+			if input ~= "y" then return end
+			ws_manager.leave()
+			manager.refresh("codemp")
+		end)
+	elseif selected.type == "buffer" then
 		if session.workspace == nil then error("join a workspace first") end
 		session.workspace:delete_buffer(selected.name):await()
 		print("deleted buffer " .. selected.name)
@@ -89,23 +95,27 @@ M.delete = function(state, path, extra)
 	end
 end
 
-M.add = function(_state)
-	if session.client == nil then
-		vim.ui.input({ prompt = "server address" }, function(input)
+M.add = function(state, path, extra)
+	local selected = state.tree:get_node()
+	if selected.type == "root" then
+		if vim.startswith(selected.name, "#") then
+			vim.ui.input({ prompt = "buffer path" }, function(input)
+				if input == nil or input == "" then return end
+				session.workspace:create_buffer(input):await()
+				manager.refresh("codemp")
+			end)
+		elseif selected.name == "workspaces" then
+			vim.ui.input({ prompt = "workspace name" }, function(input)
+				if input == nil or input == "" then return end
+				session.client:create_workspace(input):await()
+				manager.refresh("codemp")
+			end)
+		end
+	elseif selected.type == "workspace" then
+		vim.ui.input({ prompt = "user name" }, function(input)
 			if input == nil or input == "" then return end
-			client_manager.connect(input)
-		end)
-	elseif session.workspace == nil then
-		vim.ui.input({ prompt = "workspace name" }, function(input)
-			if input == nil or input == "" then return end
-			session.client:create_workspace(input):await()
-			manager.refresh("codemp")
-		end)
-	else
-		vim.ui.input({ prompt = "buffer path" }, function(input)
-			if input == nil or input == "" then return end
-			session.workspace:create_buffer(input):await()
-			manager.refresh("codemp")
+			session.client:invite_to_workspace(selected.name, input):await()
+			print("invited user " .. input .. " to workspace " .. selected.name)
 		end)
 	end
 	manager.refresh("codemp")
