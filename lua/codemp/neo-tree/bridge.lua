@@ -96,7 +96,6 @@ M.update_state = function(state)
 			new_root("users"),
 			spacer(),
 		}
-		table.insert(root.children, spacer())
 		for i, path in ipairs(codemp.workspace:filetree()) do
 			table.insert(root[1].children, new_item(codemp.workspace.name, path))
 		end
@@ -106,7 +105,7 @@ M.update_state = function(state)
 	elseif codemp.client ~= nil then
 		root = { new_root(codemp.client.username .. "@codemp") }
 		for _, ws in ipairs(codemp.available) do
-			table.insert(root.children, new_workspace(ws.name, ws.owned))
+			table.insert(root[1].children, new_workspace(ws.name, ws.owned))
 		end
 	else
 		root = { new_root("codemp") }
