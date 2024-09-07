@@ -31,9 +31,9 @@ M.icon = function(config, node, state)
 		highlight = highlights.DIRECTORY_ICON
 	elseif node.type == "root" then
 		if node:is_expanded() then
-			icon = "> "
+			icon = "| "
 		else
-			icon = "- "
+			icon = "> "
 		end
 		highlight = highlights.DIRECTORY_ICON
 	elseif node.type == "workspace" then
@@ -66,9 +66,11 @@ M.name = function(config, node, state)
 	if node.type == "title" then
 		text = " ::   " .. node.name .. "   :: "
 		highlight = highlights.PREVIEW
-	elseif node.type == "root" or node.type == "button" then
+	elseif node.type == "root" then
+		highlight = highlights.FILTER_TERM
+	elseif node.type == "button" then
 		text = " " .. node.name .. " "
-		highlight = highlights.TAB_ACTIVE
+		highlight = highlights.FLOAT_TITLE
 	end
 	return {
 		text = text,
