@@ -98,10 +98,13 @@ local function new_button(name)
 	}
 end
 
+local counter = 0;
+
 ---@return Item
 local function spacer()
+	counter = counter + 1
 	return {
-		id = "codemp-ws-spacer-" .. vim.fn.rand() % 1024,
+		id = "codemp-ws-spacer-" .. counter,
 		name = "",
 		type = "spacer",
 	}
