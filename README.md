@@ -1,4 +1,4 @@
-[![codemp](https://codemp.dev/static/banner.png)](https://codemp.dev)
+[![codemp](https://code.mp/static/banner.png)](https://code.mp)
 
 > `codemp` is a **collaborative** text editing solution to work remotely.
 

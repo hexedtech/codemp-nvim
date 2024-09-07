@@ -20,6 +20,6 @@ local plugin_dir = vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":p:h
 -- 	vim.fn.system("curl -o " .. path .. 'native' .. ext .. "https://codemp.alemi.dev/lib/lua/latest")
 -- end
 local native_path = plugin_dir .. "/lua/codemp/native.so" -- TODO get extension based on platform
-local download_url_native = "https://codemp.dev/releases/lua/codemp_native-linux.so" -- TODO get url based on platform
+local download_url_native = "https://code.mp/releases/lua/codemp_native-linux.so" -- TODO get url based on platform
 print("downloading codemp native lua extension...")
 vim.system({"curl", "-s", "-o", native_path, download_url_native }):wait() -- TODO can we run this asynchronously?
