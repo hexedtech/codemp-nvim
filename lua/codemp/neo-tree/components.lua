@@ -30,14 +30,25 @@ M.icon = function(config, node, state)
 		icon = "= "
 		highlight = highlights.DIRECTORY_ICON
 	elseif node.type == "root" then
-		icon = "> "
+		if node:is_expanded() then
+			icon = "> "
+		else
+			icon = "- "
+		end
 		highlight = highlights.DIRECTORY_ICON
 	elseif node.type == "workspace" then
-		icon = "= "
-		highlight = highlights.SYMBOLIC_LINK_TARGET
+		icon = "* "
+		if node.extra.owned then
+			highlight = highlights.GIT_STAGED
+		else
+			highlight = highlights.DIRECTORY_ICON
+		end
 	elseif node.type == "user" then
 		icon = ":"
 		highlight = codemp_utils.color(node.name)
+	elseif node.type == "entry" then
+		icon = "$"
+		highlight = highlight.GIT_STAGED
 	end
 
 	return {
@@ -50,12 +61,11 @@ M.name = function(config, node, state)
 	local highlight = config.highlight or highlights.FILE_NAME
 	local text = node.name
 	if node.type == "title" then
-		text = "::  " .. node.name .. "  ::"
+		text = " ::   " .. node.name .. "   :: "
 		highlight = highlights.PREVIEW
-	elseif node.type == "root" then
+	elseif node.type == "root" or node.type == "button" then
+		text = " " .. node.name .. " "
 		highlight = highlights.FLOAT_TITLE
-	elseif node.type == "workspace" then
-		highlight = highlights.SYMBOLIC_LINK_TARGET
 	end
 	return {
 		text = text,

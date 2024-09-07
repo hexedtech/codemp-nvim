@@ -65,11 +65,34 @@ local function new_workspace(name, owned, expanded)
 	}
 end
 
+
+---@param key string
+---@param value string
+---@return Item
+local function new_entry(key, value)
+	return {
+		id = "codemp-entry-" .. key .. "-" .. value,
+		name = key .. ": " .. value,
+		type = "entry",
+		extra = {},
+	}
+end
+
 local function new_root(name)
 	return {
 		id = "codemp-tree-" .. name,
 		name = name,
 		type = "root",
+		extra = {},
+		children = {}
+	}
+end
+
+local function new_button(name)
+	return {
+		id = "codemp-button-" .. name,
+		name = name,
+		type = "button",
 		extra = {},
 		children = {}
 	}
@@ -120,17 +143,22 @@ M.update_state = function(state)
 			table.insert(ws_section.children, new_workspace(ws.name, ws.owned))
 		end
 		table.insert(root, ws_section)
-	else
+
 		table.insert(root, spacer())
-		table.insert(root, new_root("[connect]"))
+		local status_section = new_root("client")
+		table.insert(status_section.children, new_entry("id", codemp.client.id))
+		table.insert(status_section.children, new_entry("name", codemp.client.username))
+		table.insert(root, status_section)
+	end
+
+	if codemp.client == nil then
+		table.insert(root, spacer())
+		table.insert(root, new_button("[connect]"))
 	end
 
 	renderer.show_nodes(root, state)
-
-	if codemp.workspace ~= nil then
-		for _, node in ipairs(state.tree:get_nodes()) do
-			node:expand()
-		end
+	for _, node in ipairs(state.tree:get_nodes()) do
+		node:expand()
 	end
 end
 

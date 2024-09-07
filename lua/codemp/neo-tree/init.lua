@@ -42,6 +42,15 @@ M.default_config = {
 			{ "spacer" },
 			{ "users" },
 		},
+		entry = {
+			{ "indent" },
+			{ "icon" },
+			{ "name" },
+		},
+		button = {
+			{ "indent" },
+			{ "name" },
+		},
 	},
 }
 
