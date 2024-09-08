@@ -38,7 +38,6 @@ M.open = function(state, path, extra)
 		if session.workspace == nil then
 			ws_manager.join(selected.name)
 		end
-		selected:expand()
 		manager.refresh("codemp")
 		return
 	end

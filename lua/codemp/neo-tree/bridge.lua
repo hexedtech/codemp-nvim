@@ -1,30 +1,13 @@
 local renderer = require("neo-tree.ui.renderer")
 local codemp = require("codemp.session")
 local buf_manager = require("codemp.buffers")
+---@module 'nui.tree'
 
 local M = {}
 
----@class Item
----@field id string
----@field name string
----@field type string
----@field loaded any
----@field filtered_by any
----@field extra table
----@field is_nested any
----@field skip_node any
----@field is_empty_with_hidden_root any
----@field stat any
----@field stat_provider any
----@field is_link any
----@field link_to any
----@field path any
----@field ext any
----@field search_pattern any
-
 ---@param workspace string workspace name
 ---@param path string buffer relative path
----@return Item
+---@return NuiTree.Node
 local function new_item(workspace, path)
 	return {
 		id = string.format("codemp://%s/%s", workspace, path),
@@ -37,7 +20,7 @@ end
 
 ---@param workspace string workspace name
 ---@param username string user display name
----@return Item
+---@return NuiTree.Node
 local function new_user(workspace, username)
 	return {
 		id = string.format("codemp://%s@%s", username, workspace),
@@ -51,13 +34,12 @@ end
 ---@param name string workspace name
 ---@param owned boolean true if this workspace is owned by us
 ---@param expanded? boolean if node should be pre-expanded
----@return Item
+---@return NuiTree.Node
 local function new_workspace(name, owned, expanded)
 	return {
 		id = "codemp://" .. name,
 		name = name,
 		type = "workspace",
-		['_is_expanded'] = expanded, -- TODO this is nasty can we do better?
 		extra = {
 			owned = owned,
 		},
@@ -68,7 +50,7 @@ end
 
 ---@param key string
 ---@param value string
----@return Item
+---@return NuiTree.Node
 local function new_entry(key, value)
 	return {
 		id = "codemp-entry-" .. key .. "-" .. value,
@@ -83,6 +65,8 @@ local function new_root(name)
 		id = "codemp-tree-" .. name,
 		name = name,
 		type = "root",
+		expanded = true,
+		expand = true,
 		extra = {},
 		children = {}
 	}
@@ -100,7 +84,7 @@ end
 
 local counter = 0;
 
----@return Item
+---@return NuiTree.Node
 local function spacer()
 	counter = counter + 1
 	return {
@@ -110,8 +94,28 @@ local function spacer()
 	}
 end
 
+local last_state = "N/A"
+
+---@param tree NuiTree
+local function expand(tree)
+	---@param node? NuiTree.Node
+	local function process(node)
+		local id = nil
+		if node ~= nil then id = node:get_id() end
+		for _, node in ipairs(tree:get_nodes(id)) do
+			node:expand()
+			if node:has_children() then
+				process(node)
+			end
+		end
+	end
+
+	process()
+end
+
+
 M.update_state = function(state)
-	---@type Item[]
+	---@type NuiTree.Node[]
 	local root = {
 		{
 			id = "codemp",
@@ -122,8 +126,7 @@ M.update_state = function(state)
 	}
 
 	if codemp.workspace ~= nil then
-		table.insert(root, spacer())
-		local ws_section = new_root("session #" .. codemp.workspace.name)
+		local ws_section = new_root("#" .. codemp.workspace.name)
 		for i, path in ipairs(codemp.workspace:filetree()) do
 			table.insert(ws_section.children, new_item(codemp.workspace.name, path))
 		end
@@ -134,21 +137,24 @@ M.update_state = function(state)
 		end
 		table.insert(ws_section.children, spacer())
 		table.insert(ws_section.children, usr_section)
+
+		table.insert(root, spacer())
 		table.insert(root, ws_section)
 	end
 
 	if codemp.client ~= nil then
-		table.insert(root, spacer())
 		local ws_section = new_root("workspaces")
 		for _, ws in ipairs(codemp.available) do
 			table.insert(ws_section.children, new_workspace(ws.name, ws.owned))
 		end
+		table.insert(root, spacer())
 		table.insert(root, ws_section)
 
-		table.insert(root, spacer())
 		local status_section = new_root("client")
 		table.insert(status_section.children, new_entry("id", codemp.client.id))
 		table.insert(status_section.children, new_entry("name", codemp.client.username))
+
+		table.insert(root, spacer())
 		table.insert(root, status_section)
 	end
 
@@ -158,12 +164,13 @@ M.update_state = function(state)
 	end
 
 	renderer.show_nodes(root, state)
-	for _, node in ipairs(state.tree:get_nodes()) do
-		node:expand()
-		for _, child_node in ipairs(state.tree:get_nodes(node)) do
-			child_node:expand()
-		end
-	end
+
+	local new_state = "disconnected"
+	if codemp.client ~= nil then new_state = "connected" end
+	if codemp.workspace ~= nil then new_state = "joined" end
+
+	if last_state ~= new_state then expand(state.tree) end
+	last_state = new_state
 end
 
 return M

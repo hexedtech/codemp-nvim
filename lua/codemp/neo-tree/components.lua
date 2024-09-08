@@ -110,12 +110,10 @@ M.indent = function(config, node, state)
 		state.skip_marker_at_level = {}
 	end
 
-	local strlen = vim.fn.strdisplaywidth
 	local skip_marker = state.skip_marker_at_level
 	local indent_size = config.indent_size or 2
 	local padding = config.padding or 0
 	local level = node.level
-	local with_markers = config.with_markers
 	local with_expanders = config.with_expanders == nil and file_nesting.is_enabled()
 		or config.with_expanders
 	local marker_highlight = config.highlight or highlights.INDENT_MARKER
