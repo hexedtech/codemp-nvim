@@ -45,8 +45,11 @@ local function attach(name, buffer, content, nowait)
 			if new_byte_len == 0 then
 				change_content = ""
 			else
+				local actual_end_row = start_row + new_end_row
+				local actual_end_col = new_end_col
+				if new_end_row == 0 then actual_end_col = new_end_col + start_col end
 				change_content = table.concat(
-					vim.api.nvim_buf_get_text(buf, start_row, start_col, start_row + new_end_row, start_col + new_end_col, {}),
+					vim.api.nvim_buf_get_text(buf, start_row, start_col, actual_end_row, actual_end_col, {}),
 					'\n'
 				)
 			end
