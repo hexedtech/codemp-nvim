@@ -16,20 +16,6 @@ local function color(x)
 	return available_colors[ math.fmod(math.abs(native.hash(x)), #available_colors) + 1 ]
 end
 
----@param x [ [integer, integer], [integer, integer] ]
----@return [ [integer, integer], [integer, integer] ]
-local function order_tuples(x) -- TODO send help...
-	if x[1][1] < x[2][1] then
-		return { { x[1][1], x[1][2] }, { x[2][1], x[2][2] } }
-	elseif x[1][1] > x[2][1] then
-		return { { x[2][1], x[2][2] }, { x[1][1], x[1][2] } }
-	elseif x[1][2] < x[2][2] then
-		return { { x[1][1], x[1][2] }, { x[2][1], x[2][2] } }
-	else
-		return { { x[2][1], x[2][2] }, { x[1][1], x[1][2] } }
-	end
-end
-
 ---@param first integer
 ---@param last integer
 ---@return integer, integer, integer, integer
@@ -102,7 +88,7 @@ local function cursor_position()
 	if mode == "v" then
 		local _, ls, cs = unpack(vim.fn.getpos('v'))
 		local _, le, ce = unpack(vim.fn.getpos('.'))
-		return order_tuples({ { ls-1, cs-1 }, { le-1, ce } })
+		return { { ls-1, cs-1 }, { le-1, ce } }
 	elseif mode == "V" then
 		local _, ls, _ = unpack(vim.fn.getpos('v'))
 		local _, le, _ = unpack(vim.fn.getpos('.'))
@@ -116,7 +102,7 @@ local function cursor_position()
 	else
 		local win = vim.api.nvim_get_current_win()
 		local cur = vim.api.nvim_win_get_cursor(win)
-		return order_tuples({ { cur[1]-1, cur[2] }, { cur[1]-1, cur[2]+1 } })
+		return { { cur[1]-1, cur[2] }, { cur[1]-1, cur[2]+1 } }
 	end
 end
 
@@ -188,7 +174,6 @@ end
 
 
 return {
-	order_tuples = order_tuples,
 	multiline_highlight = multiline_highlight,
 	cursor = {
 		position = cursor_position,
