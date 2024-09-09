@@ -172,6 +172,13 @@ local function multiline_highlight(buf, ns, group, start, fini)
 	end
 end
 
+local function buffer_len(buf)
+	local count = 0
+	vim.api.nvim_buf_call(buf, function()
+		count = vim.fn.wordcount().chars
+	end)
+	return count
+end
 
 return {
 	multiline_highlight = multiline_highlight,
@@ -179,6 +186,7 @@ return {
 		position = cursor_position,
 	},
 	buffer = {
+		len = buffer_len,
 		get_content = buffer_get_content,
 		set_content = buffer_set_content,
 	},
