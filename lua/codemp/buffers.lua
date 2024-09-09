@@ -41,26 +41,40 @@ local function attach(name, buffer, content, nowait)
 				"start(row:%s, col:%s) offset:%s end(row:%s, col:%s new(row:%s, col:%s)) len(old:%s, new:%s)",
 				start_row, start_col, start_offset, old_end_row, old_end_col, new_end_row, new_end_col, old_end_byte_len, new_byte_len
 			)) end
-			local change_content
-			if new_byte_len == 0 then
-				change_content = ""
-			else
-				local actual_end_row = start_row + new_end_row
-				if new_byte_len == old_end_byte_len - 1 and new_end_row == old_end_row - 1 then
-					-- if just 1 byte changes and the line count changes, we deleted a line but getting text would mean going out of bounds
-					actual_end_row = actual_end_row - 1
-				end
+			local end_offset = start_offset + old_end_byte_len
+			local change_content = ""
+			local len = utils.buffer.len(buf)
+			if start_offset + new_byte_len + 1 > len then
+				-- i dont know why but we may go out of bounds when doing 'dd' at the end of buffer??
+				local delta = (start_offset + new_byte_len + 1) - len
+				if CODEMP.config.debug then print("/!\\ bytes out of bounds by " .. delta .. ", adjusting") end
+				end_offset = end_offset - delta
+				start_offset = start_offset - delta
+			end
+			if new_byte_len > 0 then
 				local actual_end_col = new_end_col
 				if new_end_row == 0 then actual_end_col = new_end_col + start_col end
-				change_content = table.concat(
-					vim.api.nvim_buf_get_text(buf, start_row, start_col, actual_end_row, actual_end_col, {}),
-					'\n'
-				)
+				local actual_end_row = start_row + new_end_row
+				-- -- when bulk inserting at the end we go out of bounds, so we probably need to clamp?
+				-- --  issue: row=x+1 col=0 and row=x col=0 may be very far apart! we need to get last col of row x, ughh..
+				-- -- also, this doesn't work so it will stay commented out for a while longer
+				-- if new_end_row ~= old_end_row and new_end_col == 0 then
+				-- 	-- we may be dealing with the last line of the buffer, get_text could error because out-of-bounds
+				-- 	local row_count = vim.api.nvim_buf_line_count(buf)
+				-- 	if actual_end_row + 1 > row_count then
+				-- 		local delta = (actual_end_row + 1) - row_count
+				-- 		if CODEMP.config.debug then print("/!\\ row out of bounds by " .. delta .. ", adjusting") end
+				-- 		actual_end_row = actual_end_row - delta
+				-- 		actual_end_col = len - vim.api.nvim_buf_get_offset(buf, row_count)
+				-- 	end
+				-- end
+				local lines = vim.api.nvim_buf_get_text(buf, start_row, start_col, actual_end_row, actual_end_col, {})
+				change_content = table.concat(lines, '\n')
 			end
 			if CODEMP.config.debug then
-				print(string.format("sending: %s %s %s %s -- '%s'", start_row, start_col, start_row + new_end_row, start_col + new_end_col, change_content))
+				print(string.format("sending: %s..%s '%s'", start_offset, start_offset + old_end_byte_len, change_content))
 			end
-			controller:send(start_offset, start_offset + old_end_byte_len, change_content):await()
+			controller:send(start_offset, end_offset, change_content):await()
 		end,
 	})
 
