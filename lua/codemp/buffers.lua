@@ -46,6 +46,10 @@ local function attach(name, buffer, content, nowait)
 				change_content = ""
 			else
 				local actual_end_row = start_row + new_end_row
+				if new_byte_len == old_end_byte_len - 1 and new_end_row == old_end_row - 1 then
+					-- if just 1 byte changes and the line count changes, we deleted a line but getting text would mean going out of bounds
+					actual_end_row = actual_end_row - 1
+				end
 				local actual_end_col = new_end_col
 				if new_end_row == 0 then actual_end_col = new_end_col + start_col end
 				change_content = table.concat(
