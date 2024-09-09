@@ -126,9 +126,15 @@ local function sync(buffer)
 	if name ~= nil then
 		local controller = session.workspace:get_buffer(name)
 		if controller ~= nil then
-			ticks[buffer] = vim.api.nvim_buf_get_changedtick(buffer)
-			utils.buffer.set_content(buffer, controller:content():await())
-			print(" :: synched buffer " .. name)
+			local real_content = controller:content():await()
+			local my_content = utils.buffer.get_content(buffer)
+			if real_content ~= my_content then
+				ticks[buffer] = vim.api.nvim_buf_get_changedtick(buffer)
+				utils.buffer.set_content(buffer, real_content)
+				print(" !! re-synched buffer " .. name)
+			else
+				print(" :: buffer " .. name .. " is in sync")
+			end
 			return
 		end
 	end
