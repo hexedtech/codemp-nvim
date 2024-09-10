@@ -5,7 +5,11 @@ local os_uname = vim.loop.os_uname()
 local arch = os_uname.machine
 
 local platform = string.lower(os_uname.sysname)
-if platform == "mac" then platform = "darwin" end
+if platform == "mac" then
+	platform = "darwin"
+else
+	platform = platform .. "-gnu"
+end
 
 local ext = os_uname.sysname
 if os_uname.sysname == "Windows" then ext = "dll"
