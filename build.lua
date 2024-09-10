@@ -8,9 +8,9 @@ local platform = string.lower(os_uname.sysname)
 if platform == "mac" then platform = "darwin" end
 
 local ext = os_uname.sysname
-if os_uname.sysname == "Windows" then ext = ".dll"
-elseif os_uname.sysname == "Mac" then ext = ".dylib"
-else ext = ".so"
+if os_uname.sysname == "Windows" then ext = "dll"
+elseif os_uname.sysname == "Mac" then ext = "dylib"
+else ext = "so"
 end
 
 -- -- TODO compare checksum before redownloading
@@ -29,7 +29,7 @@ vim.api.nvim_create_autocmd(
 	{"ExitPre"},
 	{
 		callback = function (_ev)
-			vim.system({"sleep", "1", ";", "mv", native_path, replace_native_path}, { detach = true })
+			vim.system({"mv", native_path, replace_native_path}, { detach = true })
 		end
 	}
 )
