@@ -1,25 +1,25 @@
 local plugin_dir = vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":p:h") -- got this from https://lazy.folke.io/developers#building
 
--- -- TODO not the best loader but a simple example? urls dont work
--- local host_os = vim.loop.os_uname().sysname
--- local ext = nil
--- if host_os == "Windows" then ext = ".dll"
--- elseif host_os == "Mac" then ext = ".dylib"
--- else ext = ".so"
--- end
--- 
--- local shasum = nil
--- 
+-- TODO not the best loader but a simple example? urls dont work
+local os_uname = vim.loop.os_uname()
+
+local arch = os_uname.machine
+
+local platform = string.lower(os_uname.sysname)
+if platform == "mac" then platform = "darwin" end
+
+local ext = os_uname.sysname
+if os_uname.sysname == "Windows" then ext = ".dll"
+elseif os_uname.sysname == "Mac" then ext = ".dylib"
+else ext = ".so"
+end
+
+-- -- TODO compare checksum before redownloading
 -- if vim.fn.filereadable(path .. 'native' .. ext) == 1 then
 -- 	shasum = vim.fn.system("sha256sum " .. path .. 'native' .. ext)
 -- end
--- 
--- local last_sum = vim.fn.system("curl -s https://codemp.alemi.dev/lib/lua/latest/sum")
--- 
--- if last_sum ~= shasum then
--- 	vim.fn.system("curl -o " .. path .. 'native' .. ext .. "https://codemp.alemi.dev/lib/lua/latest")
--- end
-local native_path = plugin_dir .. "/lua/codemp/native.so" -- TODO get extension based on platform
-local download_url_native = "https://code.mp/releases/lua/codemp_native-linux.so" -- TODO get url based on platform
+
+local native_path = plugin_dir .. "/lua/codemp/native." .. ext
+local download_url_native = string.format("https://code.mp/releases/lua/codemp-lua-%s-%s.%s", arch, platform, ext)
 print("downloading codemp native lua extension...")
 vim.system({"curl", "-s", "-o", native_path, download_url_native }):wait() -- TODO can we run this asynchronously?
