@@ -20,7 +20,7 @@ end
 
 local native_path = plugin_dir .. "/lua/codemp/new-native." .. ext
 local replace_native_path = plugin_dir .. "/lua/codemp/native." .. ext
-local download_url_native = string.format("https://code.mp/releases/lua/codemp-lua-%s-%s.%s", arch, platform, ext)
+local download_url_native = string.format("https://codemp.dev/releases/lua/codemp-lua-%s-%s.%s", arch, platform, ext)
 print("downloading codemp native lua extension from '" .. download_url_native .. "' ...")
 vim.system({"curl", "-s", "-o", native_path, download_url_native }):wait() -- TODO can we run this asynchronously?
 print("downloaded! exit nvim to reload library")
