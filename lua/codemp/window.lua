@@ -102,7 +102,8 @@ local function open_buffer_under_cursor()
 	if buffers.map_rev[path] ~= nil then
 		vim.api.nvim_set_current_buf(buffers.map_rev[path])
 	else
-		buffers.attach(path)
+		local buf = vim.api.nvim_get_current_buf()
+		buffers.attach(path, buf)
 		update_window()
 	end
 end

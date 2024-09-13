@@ -74,7 +74,9 @@ local function attach(name, buffer, content, nowait)
 			if CODEMP.config.debug then
 				print(string.format("sending: %s..%s '%s'", start_offset, start_offset + old_end_byte_len, change_content))
 			end
-			controller:send(start_offset, end_offset, change_content):await()
+			controller:send({
+				first = start_offset, last = end_offset, content = change_content
+			}):await()
 		end,
 	})
 
@@ -102,7 +104,9 @@ local function attach(name, buffer, content, nowait)
 	local remote_content = controller:content():await()
 	if content ~= nil then
 		-- TODO this may happen too soon!!
-		local _ = controller:send(0, #remote_content, content) -- no need to await
+		local _ = controller:send({
+			first = 0, last = #remote_content, content = content
+		}) -- no need to await
 	else
 		ticks[buffer] = vim.api.nvim_buf_get_changedtick(buffer)
 		utils.buffer.set_content(buffer, remote_content)
