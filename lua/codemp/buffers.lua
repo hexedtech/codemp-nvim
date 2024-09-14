@@ -21,8 +21,13 @@ local function attach(name, buffer, content, nowait)
 	vim.api.nvim_set_option_value('fileformat', 'unix', { buf = buffer })
 	vim.api.nvim_buf_set_name(buffer, name)
 	local controller = session.workspace:attach_buffer(name):await()
+
 	if not nowait then
-		controller:poll():await() -- wait for current state to get synched
+		local promise = controller:poll()
+		for i=1, 20, 1 do
+			if promise.ready then break end
+			vim.uv.sleep(100)
+		end
 	end
 
 	-- TODO map name to uuid

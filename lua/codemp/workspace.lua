@@ -1,7 +1,6 @@
 local utils = require('codemp.utils')
 local buffers = require('codemp.buffers')
 local session = require('codemp.session')
-local window = require('codemp.window')
 
 local user_hl = {}
 
@@ -22,7 +21,7 @@ local function fetch_workspaces_list()
 		})
 	end
 	session.available = new_list
-	window.update()
+	require('codemp.window').update()
 end
 
 ---@param ws Workspace
@@ -72,7 +71,7 @@ local function register_cursor_handler(ws)
 				)
 			end
 			if old_buffer ~= event.buffer then
-				window.update() -- redraw user positions
+				require('codemp.window').update() -- redraw user positions
 			end
 		end
 	end))
@@ -99,11 +98,11 @@ local function join(workspace)
 	-- 			end)
 	-- 		end
 	-- 	end
-	-- 	vim.schedule(function() window.update() end)
+	-- 	vim.schedule(function() require('codemp.window').update() end)
 	-- end)
 
 	session.workspace = ws
-	window.update()
+	require('codemp.window').update()
 
 	return ws
 end

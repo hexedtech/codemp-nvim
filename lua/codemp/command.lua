@@ -2,7 +2,6 @@ local session = require('codemp.session')
 local buffers = require('codemp.buffers')
 local workspace = require('codemp.workspace')
 local utils = require('codemp.utils')
-local window = require('codemp.window')
 local client = require("codemp.client")
 
 local function filter(needle, haystack)
@@ -18,7 +17,7 @@ end
 -- always available
 local base_actions = {
 	toggle = function()
-		window.toggle()
+		require('codemp.window').toggle()
 	end,
 
 	connect = function(host)
@@ -88,7 +87,7 @@ local joined_actions = {
 			if not bang then buffers.create(path) end
 			local content = utils.buffer.get_content(buf)
 			buffers.attach(path, buf, content)
-			window.update() -- TODO would be nice to do automatically inside
+			require('codemp.window').update() -- TODO would be nice to do automatically inside
 		else
 			print(" !! empty path or open a file")
 		end
@@ -123,7 +122,7 @@ local joined_actions = {
 	detach = function(path)
 		if path == nil then error("missing buffer name") end
 		buffers.detach(path)
-		window.update() -- TODO would be nice to do automatically inside
+		require('codemp.window').update() -- TODO would be nice to do automatically inside
 	end,
 
 	leave = function(ws)
