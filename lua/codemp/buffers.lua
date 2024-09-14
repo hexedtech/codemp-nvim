@@ -109,8 +109,11 @@ local function attach(name, buffer, content, nowait)
 		-- TODO this may happen too soon!!
 		local _ = controller:send(0, #remote_content, content) -- no need to await
 	else
-		ticks[buffer] = vim.api.nvim_buf_get_changedtick(buffer)
-		utils.buffer.set_content(buffer, remote_content)
+		local current_content = utils.buffer.get_content(buffer)
+		if current_content ~= remote_content then
+			ticks[buffer] = vim.api.nvim_buf_get_changedtick(buffer)
+			utils.buffer.set_content(buffer, remote_content)
+		end
 	end
 
 	controller:callback(function (_controller) async:send() end)
