@@ -7,6 +7,8 @@ local arch = os_uname.machine
 local platform = string.lower(os_uname.sysname)
 if platform == "mac" then
 	platform = "darwin"
+elseif platform == "windows_nt" then
+	platform = "windows-gnu"
 else
 	platform = platform .. "-gnu"
 end
