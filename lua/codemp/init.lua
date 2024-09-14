@@ -18,6 +18,9 @@ end
 
 if CODEMP.native == nil then
 	CODEMP.native = require('codemp.loader').load() -- make sure we can load the native library correctly, otherwise no point going forward
+	if CODEMP.native == nil then
+		print(" !! could not load native bindings, try reloading")
+	end
 	--CODEMP.native.logger(function (msg)
 	--	vim.schedule(function () print(msg) end)
 	--end, true)

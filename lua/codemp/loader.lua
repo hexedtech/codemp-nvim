@@ -1,9 +1,10 @@
 ---@module 'annotations'
 
----@return Codemp
+---@return Codemp?
 local function load()
-	local native, _ = require("codemp.native")
-	return native
+	local ok, native = pcall(require, "codemp.native")
+	if ok then return native end
+	return nil
 end
 
 return {
