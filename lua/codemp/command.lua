@@ -32,8 +32,15 @@ local connected_actions = {
 	end,
 
 	join = function(ws)
-		if ws == nil then error("missing workspace name") end
-		workspace.join(ws)
+		if ws == nil then
+			local opts = { prompt = "Select workspace to join:", format_item = function (x) return x.name end }
+			return vim.ui.select(session.available, opts, function (choice)
+				if choice == nil then return end -- action canceled by user
+				workspace.join(session.available[choice].name)
+			end)
+		else
+			workspace.join(ws)
+		end
 	end,
 
 	start = function(ws)
@@ -108,15 +115,25 @@ local joined_actions = {
 	end,
 
 	attach = function(path, bang)
-		if path == nil then error("missing buffer name") end
-		local buffer = nil
-		if bang then
-			buffer = vim.api.nvim_get_current_buf()
-		else
-			buffer = vim.api.nvim_create_buf(true, false)
-			vim.api.nvim_set_current_buf(buffer)
+		local function doit(p)
+			local buffer = nil
+			if bang then
+				buffer = vim.api.nvim_get_current_buf()
+			else
+				buffer = vim.api.nvim_create_buf(true, false)
+				vim.api.nvim_set_current_buf(buffer)
+			end
+			buffers.attach(p, buffer)
 		end
-		buffers.attach(path, buffer)
+		if path == nil then
+			local filetree = session.workspace:filetree(nil, false)
+			return vim.ui.select(filetree, { prompt = "Select buffer to attach to:" }, function (choice)
+				if choice == nil then return end -- action canceled by user
+				doit(filetree[choice])
+			end)
+		else
+			doit(path)
+		end
 	end,
 
 	detach = function(path)
