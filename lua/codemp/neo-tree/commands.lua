@@ -124,20 +124,20 @@ M.add = function(state, path, extra)
 	local selected = state.tree:get_node()
 	if selected.type == "root" then
 		if vim.startswith(selected.name, "#") then
-			vim.ui.input({ prompt = "buffer path" }, function(input)
+			vim.ui.input({ prompt = "new buffer path" }, function(input)
 				if input == nil or input == "" then return end
 				session.workspace:create_buffer(input):await()
 				manager.refresh("codemp")
 			end)
 		elseif selected.name == "workspaces" then
-			vim.ui.input({ prompt = "workspace name" }, function(input)
+			vim.ui.input({ prompt = "new workspace name" }, function(input)
 				if input == nil or input == "" then return end
 				session.client:create_workspace(input):await()
 				manager.refresh("codemp")
 			end)
 		end
 	elseif selected.type == "workspace" then
-		vim.ui.input({ prompt = "user name" }, function(input)
+		vim.ui.input({ prompt = "user name to invite" }, function(input)
 			if input == nil or input == "" then return end
 			session.client:invite_to_workspace(selected.name, input):await()
 			print("invited user " .. input .. " to workspace " .. selected.name)
