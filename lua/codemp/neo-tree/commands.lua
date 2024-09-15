@@ -1,5 +1,6 @@
 local cc = require("neo-tree.sources.common.commands")
 local utils = require("neo-tree.utils")
+local codemp_utils = require("codemp.utils")
 local manager = require("neo-tree.sources.manager")
 local session = require("codemp.session")
 local buf_manager = require("codemp.buffers")
@@ -63,12 +64,30 @@ end
 M.move = function(state, path, extra)
 	local selected = state.tree:get_node()
 	if selected.type == "buffer" then
-		local window = utils.get_appropriate_window(state)
-		local buf = vim.api.nvim_win_get_buf(window)
-		buf_manager.attach(selected.name, buf)
-		return
+		return vim.ui.input({ prompt = "move content into open buffer?" }, function (input)
+			if input == nil then return end
+			if not vim.startswith("y", string.lower(input)) then return end
+			local window = utils.get_appropriate_window(state)
+			local buf = vim.api.nvim_win_get_buf(window)
+			buf_manager.attach(selected.name, buf)
+		end)
 	end
 	error("only buffers can be moved to current file")
+end
+
+M.copy = function(state, path, extra)
+	local selected = state.tree:get_node()
+	if selected.type == "buffer" then
+		return vim.ui.input({ prompt = "copy content to remote buffer?" }, function (input)
+			if input == nil then return end
+			if not vim.startswith("y", string.lower(input)) then return end
+			local window = utils.get_appropriate_window(state)
+			local buf = vim.api.nvim_win_get_buf(window)
+			local content = codemp_utils.buffer.get_content(buf)
+			buf_manager.attach(selected.name, buf, content)
+		end)
+	end
+	error("current file can only be copied into buffers")
 end
 
 M.delete = function(state, path, extra)
