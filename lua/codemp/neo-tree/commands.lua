@@ -133,7 +133,7 @@ M.add = function(state, path, extra)
 			vim.ui.input({ prompt = "new workspace name" }, function(input)
 				if input == nil or input == "" then return end
 				session.client:create_workspace(input):await()
-				manager.refresh("codemp")
+				vim.schedule(function () require('codemp.workspace').list() end)
 			end)
 		end
 	elseif selected.type == "workspace" then
