@@ -76,22 +76,28 @@ M.delete = function(state, path, extra)
 	if selected.type == "root" and vim.startswith(selected.name, "#") then
 		vim.ui.input({ prompt = "disconnect from workspace?" }, function (input)
 			if input == nil then return end
-			if input ~= "y" then return end
+			if not vim.startswith("y", string.lower(input)) then return end
 			ws_manager.leave()
 			manager.refresh("codemp")
 		end)
 	elseif selected.type == "buffer" then
 		if session.workspace == nil then error("join a workspace first") end
-		session.workspace:delete_buffer(selected.name):await()
-		print("deleted buffer " .. selected.name)
-		manager.refresh("codemp")
+		vim.ui.input({ prompt = "delete buffer '" .. selected.name .. "'?" }, function (input)
+			if input == nil then return end
+			if not vim.startswith("y", string.lower(input)) then return end
+			session.workspace:delete_buffer(selected.name):await()
+			print("deleted buffer " .. selected.name)
+			manager.refresh("codemp")
+		end)
 	elseif selected.type == "workspace" then
 		if session.client == nil then error("connect to server first") end
-		session.client:delete_workspace(selected.name):await()
-		print("deleted workspace " .. selected.name)
-		manager.refresh("codemp")
-	else
-		print("/!\\ can only delete buffers and workspaces")
+		vim.ui.input({ prompt = "delete buffer '" .. selected.name .. "'?" }, function (input)
+			if input == nil then return end
+			if not vim.startswith("y", string.lower(input)) then return end
+			session.client:delete_workspace(selected.name):await()
+			print("deleted workspace " .. selected.name)
+			manager.refresh("codemp")
+		end)
 	end
 end
 
