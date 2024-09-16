@@ -62,7 +62,7 @@ local connected_actions = {
 	invite = function(user)
 		local ws
 		if session.workspace ~= nil then
-			ws = session.workspace
+			ws = session.workspace.name
 		else
 			ws = vim.fn.input("workspace > ", "")
 		end
