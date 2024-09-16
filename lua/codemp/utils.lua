@@ -22,7 +22,8 @@ local function async_poller(generator, callback)
 	timer:start(500, 500, function()
 		if promise == nil then promise = generator() end
 		if promise.ready then
-			vim.schedule(function() callback(promise:await()) end)
+			local res = promise:await()
+			vim.schedule(function() callback(res) end)
 			promise = nil
 		end
 	end)
