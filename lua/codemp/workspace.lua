@@ -33,17 +33,28 @@ end
 ---@param ws Workspace
 local function register_cursor_callback(ws)
 	local controller = ws.cursor
+	local once = true
 	vim.api.nvim_create_autocmd({"CursorMoved", "CursorMovedI", "ModeChanged"}, {
 		group = vim.api.nvim_create_augroup("codemp-workspace-" .. ws.name, { clear = true }),
 		callback = function (_)
 			local cur = utils.cursor.position()
 			local buf = vim.api.nvim_get_current_buf()
 			if buffers.map[buf] ~= nil then
+				once = true
 				local _ = controller:send({
 					buffer = buffers.map[buf],
 					start = cur[1],
 					finish = cur[2],
 				}) -- no need to await here
+			else -- set ourselves "away" only once
+				if once then
+					local _ = controller:send({
+						buffer = "",
+						start = { 0, 0 },
+						finish = { 0, 0 },
+					}) -- no need to await here
+				end
+				once = false
 			end
 		end
 	})
