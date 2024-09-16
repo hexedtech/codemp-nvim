@@ -1,4 +1,7 @@
 [![codemp](https://code.mp/static/banner.png)](https://code.mp)
+[![GitHub last commit](https://img.shields.io/github/last-commit/hexedtech/codemp-nvim)](https://github.com/hexedtech/codemp-nvim)
+[![LuaRocks](https://img.shields.io/luarocks/v/alemi/codemp)](https://luarocks.org/modules/alemi/codemp)
+[![Gitter](https://img.shields.io/gitter/room/hexedtech/codemp)](https://gitter.im/hexedtech/codemp)
 
 > `codemp` is a **collaborative** text editing solution to work remotely.
 
