@@ -25,7 +25,7 @@ local function attach(name, buffer, content, nowait)
 
 	vim.api.nvim_set_option_value('fileformat', 'unix', { buf = buffer })
 	vim.api.nvim_buf_set_name(buffer, name)
-	local controller = session.workspace:attach_buffer(name):await()
+	local controller = session.workspace:attach(name):await()
 
 	if not nowait then
 		local promise = controller:poll()
@@ -84,7 +84,9 @@ local function attach(name, buffer, content, nowait)
 			if CODEMP.config.debug then
 				print(string.format("sending: %s..%s '%s'", start_offset, start_offset + old_end_byte_len, change_content))
 			end
-			controller:send(start_offset, end_offset, change_content):await()
+			controller:send({
+				start = start_offset, finish = end_offset, content = change_content
+			}):await()
 		end,
 	})
 
@@ -94,9 +96,9 @@ local function attach(name, buffer, content, nowait)
 			if event == nil then break end
 			ticks[buffer] = vim.api.nvim_buf_get_changedtick(buffer)
 			if CODEMP.config.debug then
-				print(" ~~ applying change ~~ " .. event.first .. ".." .. event.last .. "::[" .. event.content .. "]")
+				print(" ~~ applying change ~~ " .. event.start .. ".." .. event.finish .. "::[" .. event.content .. "]")
 			end
-			utils.buffer.set_content(buffer, event.content, event.first, event.last)
+			utils.buffer.set_content(buffer, event.content, event.start, event.finish)
 			if event.hash ~= nil then
 				if utils.hash(utils.buffer.get_content(buffer)) ~= event.hash then
 					-- OUT OF SYNC!
@@ -112,7 +114,9 @@ local function attach(name, buffer, content, nowait)
 	local remote_content = controller:content():await()
 	if content ~= nil then
 		-- TODO this may happen too soon!!
-		local _ = controller:send(0, #remote_content, content) -- no need to await
+		local _ = controller:send({
+			start = 0, finish = #remote_content, content = content
+		}) -- no need to await
 	else
 		local current_content = utils.buffer.get_content(buffer)
 		if current_content ~= remote_content then
@@ -137,7 +141,7 @@ local function detach(name)
 	local buffer = buffer_id_map[name]
 	id_buffer_map[buffer] = nil
 	buffer_id_map[name] = nil
-	session.workspace:detach_buffer(name)
+	session.workspace:detach(name)
 	vim.api.nvim_buf_delete(buffer, {})
 
 	print(" -- detached from buffer " .. name)
@@ -176,7 +180,7 @@ local function create(buffer)
 	if session.workspace == nil then
 		error("join a workspace first")
 	end
-	session.workspace:create_buffer(buffer):await()
+	session.workspace:create(buffer):await()
 	print(" ++  created buffer " .. buffer)
 	require('codemp.window').update()
 end

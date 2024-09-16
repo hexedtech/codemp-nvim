@@ -33,7 +33,11 @@ local function register_cursor_callback(ws)
 			local cur = utils.cursor.position()
 			local buf = vim.api.nvim_get_current_buf()
 			if buffers.map[buf] ~= nil then
-				local _ = controller:send(buffers.map[buf], cur[1][1], cur[1][2], cur[2][1], cur[2][2]) -- no need to await here
+				local _ = controller:send({
+					buffer = buffers.map[buf],
+					start = cur[1],
+					finish = cur[2],
+				}) -- no need to await here
 			end
 		end
 	})

@@ -104,7 +104,7 @@ M.delete = function(state, path, extra)
 		vim.ui.input({ prompt = "delete buffer '" .. selected.name .. "'?" }, function (input)
 			if input == nil then return end
 			if not vim.startswith("y", string.lower(input)) then return end
-			session.workspace:delete_buffer(selected.name):await()
+			session.workspace:delete(selected.name):await()
 			print("deleted buffer " .. selected.name)
 			manager.refresh("codemp")
 		end)
@@ -126,7 +126,7 @@ M.add = function(state, path, extra)
 		if vim.startswith(selected.name, "#") then
 			vim.ui.input({ prompt = "new buffer path" }, function(input)
 				if input == nil or input == "" then return end
-				session.workspace:create_buffer(input):await()
+				session.workspace:create(input):await()
 				manager.refresh("codemp")
 			end)
 		elseif selected.name == "workspaces" then

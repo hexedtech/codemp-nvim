@@ -102,7 +102,7 @@ local joined_actions = {
 
 	delete = function(path)
 		if path == nil then error("missing buffer name") end
-		session.workspace:delete_buffer(path):await()
+		session.workspace:delete(path):await()
 		print(" xx  deleted buffer " .. path)
 	end,
 
