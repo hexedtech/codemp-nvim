@@ -60,7 +60,8 @@ M.open = function(state, path, extra)
 			local buf_name = buf_manager.users[selected.name]
 			local buf_id = buf_manager.map_rev[buf_name]
 			if buf_id ~= nil then
-				local win = vim.api.nvim_get_current_win()
+				local win = utils.get_appropriate_window(state)
+				vim.api.nvim_set_current_win(win)
 				vim.api.nvim_win_set_buf(win, buf_id)
 				vim.api.nvim_win_set_cursor(win, { usr.pos[1] + 1, usr.pos[2] })
 			else
