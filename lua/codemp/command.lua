@@ -12,7 +12,7 @@ local function filter(needle, haystack, getter)
 			hay = getter(opt)
 		end
 		if vim.startswith(hay, needle) then
-			table.insert(hints, opt)
+			table.insert(hints, hay)
 		end
 	end
 	return hints
