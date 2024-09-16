@@ -55,7 +55,18 @@ M.open = function(state, path, extra)
 		return
 	end
 	if selected.type == "user" then
-		print("another remote user")
+		local usr = ws_manager.map[selected.name]
+		if usr ~= nil then
+			local buf_name = buf_manager.users[selected.name]
+			local buf_id = buf_manager.map_rev[buf_name]
+			if buf_id ~= nil then
+				local win = vim.api.nvim_get_current_win()
+				vim.api.nvim_win_set_buf(win, buf_id)
+				vim.api.nvim_win_set_cursor(win, { usr.pos[1] + 1, usr.pos[2] })
+			else
+				print(" /!\\ not attached to buffer '" .. buf_name .. "'")
+			end
+		end
 		return
 	end
 	error("unrecognized node type")
