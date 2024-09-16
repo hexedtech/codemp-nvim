@@ -167,18 +167,18 @@ end
 ---@param buf integer buffer to highlight onto
 ---@param ns integer namespace for highlight
 ---@param group string highlight group
----@param start RowCol
----@param fini RowCol
+---@param start [integer, integer]
+---@param fini [integer, integer]
 local function multiline_highlight(buf, ns, group, start, fini)
-	for i=start.row,fini.row do
-		if i == start.row and i == fini.row then
-			local fini_col = fini.col
-			if start.col == fini.col then fini_col = fini_col + 1 end
-			vim.api.nvim_buf_add_highlight(buf, ns, group, i, start.col, fini_col)
-		elseif i == start.row then
-			vim.api.nvim_buf_add_highlight(buf, ns, group, i, start.col, -1)
-		elseif i == fini.row then
-			vim.api.nvim_buf_add_highlight(buf, ns, group, i, 0, fini.col)
+	for i=start[1],fini[1] do
+		if i == start[1] and i == fini[1] then
+			local fini_col = fini[2]
+			if start[2] == fini[2] then fini_col = fini_col + 1 end
+			vim.api.nvim_buf_add_highlight(buf, ns, group, i, start[2], fini_col)
+		elseif i == start[1] then
+			vim.api.nvim_buf_add_highlight(buf, ns, group, i, start[2], -1)
+		elseif i == fini[1] then
+			vim.api.nvim_buf_add_highlight(buf, ns, group, i, 0, fini[2])
 		else
 			vim.api.nvim_buf_add_highlight(buf, ns, group, i, 0, -1)
 		end
