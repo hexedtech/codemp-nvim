@@ -24,11 +24,21 @@ end
 -- 	shasum = vim.fn.system("sha256sum " .. path .. 'native' .. ext)
 -- end
 
-local native_path = plugin_dir .. "/lua/codemp/new-native." .. ext
-local replace_native_path = plugin_dir .. "/lua/codemp/native." .. ext
+local sep = '/'
+if os_uname.sysname == "Windows_NT" then sep = '\\' end
+
+local native_path = plugin_dir..sep.."lua"..sep.."codemp"..sep.."new-native."..ext
+local replace_native_path = plugin_dir..sep.."lua"..sep.."codemp"..sep.."native."..ext
 local download_url_native = string.format("https://codemp.dev/releases/lua/codemp-lua-%s-%s.%s", arch, platform, ext)
+
+local command = {
+	Windows_NT = { "Invoke-WebRequest", download_url_native, "-OutFile", native_path },
+	Linux = {"curl", "-o", native_path, download_url_native },
+	Mac = {"curl", "-o", native_path, download_url_native },
+}
+
 print("downloading codemp native lua extension from '" .. download_url_native .. "' ...")
-vim.system({"curl", "-s", "-o", native_path, download_url_native }):wait() -- TODO can we run this asynchronously?
+vim.system(command[os_uname.sysname]):wait() -- TODO can we run this asynchronously?
 print("downloaded! exit nvim to reload library")
 
 vim.api.nvim_create_autocmd(
