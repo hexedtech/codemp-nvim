@@ -16,6 +16,19 @@ local function color(x)
 	return available_colors[ math.fmod(math.abs(native.hash(x)), #available_colors) + 1 ]
 end
 
+local function async_poller(generator, callback)
+	local promise = nil
+	local timer = vim.loop.new_timer()
+	timer:start(500, 500, function()
+		if promise == nil then promise = generator() end
+		if promise.ready then
+			callback(promise:await())
+			promise = nil
+		end
+	end)
+
+end
+
 ---@param first integer
 ---@param last integer
 ---@return integer, integer, integer, integer
@@ -193,4 +206,5 @@ return {
 	hash = native.hash,
 	available_colors = available_colors,
 	color = color,
+	poller = async_poller,
 }
