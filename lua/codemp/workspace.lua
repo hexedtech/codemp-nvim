@@ -117,12 +117,10 @@ local function join(workspace)
 		function(event)
 			if event.type == "leave" then
 				if buffers.users[event.value] ~= nil then
-					vim.schedule(function ()
-						local buf_name = buffers.users[event.value]
-						vim.api.nvim_buf_clear_namespace(buffers.map_rev[buf_name], user_hl[event.value].ns, 0, -1)
-						buffers.users[event.value] = nil
-						user_hl[event.value] = nil
-					end)
+					local buf_name = buffers.users[event.value]
+					vim.api.nvim_buf_clear_namespace(buffers.map_rev[buf_name], user_hl[event.value].ns, 0, -1)
+					buffers.users[event.value] = nil
+					user_hl[event.value] = nil
 				end
 			elseif event.type == "join" then
 				buffers.users[event.value] = ""
@@ -132,7 +130,7 @@ local function join(workspace)
 					pos = { 0, 0 },
 				}
 			end
-			vim.schedule(function() require('codemp.window').update() end)
+			require('codemp.window').update()
 		end
 	)
 
