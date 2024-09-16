@@ -20,8 +20,9 @@ local base_actions = {
 		require('codemp.window').toggle()
 	end,
 
-	connect = function(host)
-		client.connect(host)
+	connect = function()
+		client.connect()
+		print(" ++ connected")
 	end,
 }
 
@@ -107,7 +108,13 @@ local joined_actions = {
 	end,
 
 	buffers = function()
-		workspace.open_buffer_tree()
+		for _, buf in ipairs(session.workspace:filetree()) do
+			if buffers.map_rev[buf] ~= nil then
+				print(" +- " .. buf)
+			else
+				print(" -- " .. buf)
+			end
+		end
 	end,
 
 	sync = function()
@@ -204,10 +211,10 @@ vim.api.nvim_create_user_command(
 			elseif stage == 3 then
 				if args[#args-1] == 'attach' or args[#args-1] == 'detach' then
 					if session.client ~= nil and session.workspace ~= nil then
-						if session.workspace ~= nil then
-							return filter(lead, session.workspace:filetree())
-						end
+						return filter(lead, session.workspace:filetree())
 					end
+				elseif args[#args-1] == 'join' then
+					return filter(lead, session.available)
 				end
 
 				return {}
