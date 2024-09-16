@@ -193,6 +193,15 @@ local function buffer_len(buf)
 	return count
 end
 
+---@return string
+local function separator()
+	if vim.uv.os_uname().sysname == "Windows_NT" then
+		return '\\'
+	else
+		return '/'
+	end
+end
+
 return {
 	multiline_highlight = multiline_highlight,
 	cursor = {
@@ -207,4 +216,5 @@ return {
 	available_colors = available_colors,
 	color = color,
 	poller = async_poller,
+	sep = separator,
 }

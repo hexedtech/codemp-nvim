@@ -92,7 +92,8 @@ local joined_actions = {
 		if path == nil then
 			local cwd = vim.fn.getcwd()
 			local full_path = vim.fn.expand("%:p")
-			path = string.gsub(full_path, cwd .. "/", "")
+			path = string.gsub(full_path, cwd .. utils.sep(), "")
+			path = string.gsub(path, '\\', '/')
 		end
 		if #path > 0 then
 			local buf = vim.api.nvim_get_current_buf()
