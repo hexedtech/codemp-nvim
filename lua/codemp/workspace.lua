@@ -118,8 +118,10 @@ local function join(workspace)
 			if event.type == "leave" then
 				if buffers.users[event.value] ~= nil then
 					local buf_name = buffers.users[event.value]
-					vim.api.nvim_buf_clear_namespace(buffers.map_rev[buf_name], user_hl[event.value].ns, 0, -1)
-					buffers.users[event.value] = nil
+					if buf_name ~= nil then
+						vim.api.nvim_buf_clear_namespace(buffers.map_rev[buf_name], user_hl[event.value].ns, 0, -1)
+						buffers.users[event.value] = nil
+					end
 					user_hl[event.value] = nil
 				end
 			elseif event.type == "join" then
