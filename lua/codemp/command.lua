@@ -4,10 +4,14 @@ local workspace = require('codemp.workspace')
 local utils = require('codemp.utils')
 local client = require("codemp.client")
 
-local function filter(needle, haystack)
+local function filter(needle, haystack, getter)
 	local hints = {}
 	for _, opt in pairs(haystack) do
-		if vim.startswith(opt, needle) then
+		local hay = opt
+		if getter ~= nil then
+			hay = getter(opt)
+		end
+		if vim.startswith(hay, needle) then
 			table.insert(hints, opt)
 		end
 	end
@@ -214,7 +218,7 @@ vim.api.nvim_create_user_command(
 						return filter(lead, session.workspace:filetree())
 					end
 				elseif args[#args-1] == 'join' then
-					return filter(lead, session.available)
+					return filter(lead, session.available, function(ws) return ws.name end)
 				end
 
 				return {}
