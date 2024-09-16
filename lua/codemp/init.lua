@@ -7,7 +7,7 @@ if CODEMP == nil then
 		timer = nil,
 		config = {
 			neo_tree = false,
-			timer_interval = 100,
+			timer_interval = 20,
 			debug = false,
 		},
 		setup = function (opts)
