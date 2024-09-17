@@ -38,7 +38,6 @@ M.open = function(state, path, extra)
 		if CODEMP.workspace == nil then
 			ws_manager.join(selected.name)
 		end
-		manager.refresh("codemp")
 		return
 	end
 	if selected.type == "buffer" then
@@ -108,7 +107,6 @@ M.delete = function(state, path, extra)
 			if input == nil then return end
 			if not vim.startswith("y", string.lower(input)) then return end
 			ws_manager.leave()
-			manager.refresh("codemp")
 		end)
 	elseif selected.type == "buffer" then
 		if CODEMP.workspace == nil then error("join a workspace first") end
@@ -147,6 +145,7 @@ M.add = function(state, path, extra)
 			vim.ui.input({ prompt = "new workspace name" }, function(input)
 				if input == nil or input == "" then return end
 				CODEMP.client:create_workspace(input):and_then(function ()
+					manager.refresh("codemp")
 					require('codemp.workspace').list()
 				end)
 			end)
@@ -159,7 +158,6 @@ M.add = function(state, path, extra)
 			end)
 		end)
 	end
-	manager.refresh("codemp")
 end
 
 cc._add_common_commands(M)

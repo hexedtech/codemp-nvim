@@ -124,13 +124,18 @@ M.update_state = function(state)
 		}
 	}
 
+	state.force_open_folders = true
+	state.default_expanded_nodes = {}
+
 	if CODEMP.workspace ~= nil then
 		local ws_section = new_root("#" .. CODEMP.workspace.name)
+		table.insert(state.default_expanded_nodes, ws_section.id)
 		for i, path in ipairs(CODEMP.workspace:filetree()) do
 			table.insert(ws_section.children, new_item(CODEMP.workspace.name, path))
 		end
 
 		local usr_section = new_root("users")
+		table.insert(state.default_expanded_nodes, usr_section.id)
 		for user, buffer in pairs(buf_manager.users) do
 			table.insert(usr_section.children, new_user(CODEMP.workspace.name, user))
 		end
@@ -143,6 +148,7 @@ M.update_state = function(state)
 
 	if CODEMP.client ~= nil then
 		local ws_section = new_root("workspaces")
+		table.insert(state.default_expanded_nodes, ws_section.id)
 		for _, ws in ipairs(CODEMP.available) do
 			table.insert(ws_section.children, new_workspace(ws.name, ws.owned))
 		end
@@ -150,6 +156,7 @@ M.update_state = function(state)
 		table.insert(root, ws_section)
 
 		local status_section = new_root("client")
+		table.insert(state.default_expanded_nodes, status_section.id)
 		table.insert(status_section.children, new_entry("id", CODEMP.client.id))
 		table.insert(status_section.children, new_entry("name", CODEMP.client.username))
 
@@ -163,13 +170,6 @@ M.update_state = function(state)
 	end
 
 	renderer.show_nodes(root, state)
-
-	local new_state = "disconnected"
-	if CODEMP.client ~= nil then new_state = "connected" end
-	if CODEMP.workspace ~= nil then new_state = "joined" end
-
-	if last_state ~= new_state then expand(state.tree) end
-	last_state = new_state
 end
 
 return M

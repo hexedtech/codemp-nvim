@@ -146,6 +146,7 @@ local function leave()
 	CODEMP.client:leave_workspace(CODEMP.workspace.name)
 	print(" -- left workspace")
 	CODEMP.workspace = nil
+	require('codemp.window').update()
 end
 
 return {
