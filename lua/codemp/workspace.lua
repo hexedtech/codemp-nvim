@@ -1,6 +1,5 @@
 local utils = require('codemp.utils')
 local buffers = require('codemp.buffers')
-local session = require('codemp.session')
 
 ---@class UserHighlight
 ---@field ns integer namespace to use for this user
@@ -12,21 +11,21 @@ local user_hl = {}
 
 local function fetch_workspaces_list()
 	local new_list = {}
-	session.client:list_workspaces(true, false):and_then(function (owned)
+	CODEMP.client:list_workspaces(true, false):and_then(function (owned)
 		for _, ws in pairs(owned) do
 			table.insert(new_list, {
 				name = ws,
 				owned = true,
 			})
 		end
-		session.client:list_workspaces(false, true):and_then(function (invited)
+		CODEMP.client:list_workspaces(false, true):and_then(function (invited)
 			for _, ws in pairs(invited) do
 				table.insert(new_list, {
 					name = ws,
 					owned = false,
 				})
 			end
-			session.available = new_list
+			CODEMP.available = new_list
 			require('codemp.window').update()
 		end)
 	end)
@@ -109,7 +108,7 @@ end
 ---@param workspace string workspace name to join
 ---join a workspace and register event handlers
 local function join(workspace)
-	session.client:join_workspace(workspace):and_then(function (ws)
+	CODEMP.client:join_workspace(workspace):and_then(function (ws)
 		print(" >< joined workspace " .. ws.name)
 		register_cursor_callback(ws)
 		register_cursor_handler(ws)
@@ -138,15 +137,15 @@ local function join(workspace)
 			end
 		)
 
-		session.workspace = ws
+		CODEMP.workspace = ws
 		require('codemp.window').update()
 	end)
 end
 
 local function leave()
-	session.client:leave_workspace(session.workspace.name)
+	CODEMP.client:leave_workspace(CODEMP.workspace.name)
 	print(" -- left workspace")
-	session.workspace = nil
+	CODEMP.workspace = nil
 end
 
 return {

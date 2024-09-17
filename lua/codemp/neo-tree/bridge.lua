@@ -1,5 +1,4 @@
 local renderer = require("neo-tree.ui.renderer")
-local codemp = require("codemp.session")
 local buf_manager = require("codemp.buffers")
 ---@module 'nui.tree'
 
@@ -125,15 +124,15 @@ M.update_state = function(state)
 		}
 	}
 
-	if codemp.workspace ~= nil then
-		local ws_section = new_root("#" .. codemp.workspace.name)
-		for i, path in ipairs(codemp.workspace:filetree()) do
-			table.insert(ws_section.children, new_item(codemp.workspace.name, path))
+	if CODEMP.workspace ~= nil then
+		local ws_section = new_root("#" .. CODEMP.workspace.name)
+		for i, path in ipairs(CODEMP.workspace:filetree()) do
+			table.insert(ws_section.children, new_item(CODEMP.workspace.name, path))
 		end
 
 		local usr_section = new_root("users")
 		for user, buffer in pairs(buf_manager.users) do
-			table.insert(usr_section.children, new_user(codemp.workspace.name, user))
+			table.insert(usr_section.children, new_user(CODEMP.workspace.name, user))
 		end
 		table.insert(ws_section.children, spacer())
 		table.insert(ws_section.children, usr_section)
@@ -142,23 +141,23 @@ M.update_state = function(state)
 		table.insert(root, ws_section)
 	end
 
-	if codemp.client ~= nil then
+	if CODEMP.client ~= nil then
 		local ws_section = new_root("workspaces")
-		for _, ws in ipairs(codemp.available) do
+		for _, ws in ipairs(CODEMP.available) do
 			table.insert(ws_section.children, new_workspace(ws.name, ws.owned))
 		end
 		table.insert(root, spacer())
 		table.insert(root, ws_section)
 
 		local status_section = new_root("client")
-		table.insert(status_section.children, new_entry("id", codemp.client.id))
-		table.insert(status_section.children, new_entry("name", codemp.client.username))
+		table.insert(status_section.children, new_entry("id", CODEMP.client.id))
+		table.insert(status_section.children, new_entry("name", CODEMP.client.username))
 
 		table.insert(root, spacer())
 		table.insert(root, status_section)
 	end
 
-	if codemp.client == nil then
+	if CODEMP.client == nil then
 		table.insert(root, spacer())
 		table.insert(root, new_button("[connect]"))
 	end
@@ -166,8 +165,8 @@ M.update_state = function(state)
 	renderer.show_nodes(root, state)
 
 	local new_state = "disconnected"
-	if codemp.client ~= nil then new_state = "connected" end
-	if codemp.workspace ~= nil then new_state = "joined" end
+	if CODEMP.client ~= nil then new_state = "connected" end
+	if CODEMP.workspace ~= nil then new_state = "joined" end
 
 	if last_state ~= new_state then expand(state.tree) end
 	last_state = new_state

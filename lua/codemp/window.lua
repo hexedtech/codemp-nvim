@@ -9,7 +9,6 @@ end
 
 -- legacy crude filetree if neo-tree is not available
 
-local session = require('codemp.session')
 local utils = require('codemp.utils')
 local buffers = require('codemp.buffers')
 
@@ -41,10 +40,10 @@ local function update_window()
 	local buffer_to_row = {}
 	local user_to_row = {}
 	local off = {}
-	local tree = session.workspace:filetree()
+	local tree = CODEMP.workspace:filetree()
 	vim.api.nvim_set_option_value('modifiable', true, { buf = buffer_id })
 	local tmp =  ">| codemp\n"
-	tmp = tmp .. " |: " .. session.workspace.name .. "\n"
+	tmp = tmp .. " |: " .. CODEMP.workspace.name .. "\n"
 	tmp = tmp .. " |\n"
 	local base_row = 3
 	for n, path in pairs(tree) do

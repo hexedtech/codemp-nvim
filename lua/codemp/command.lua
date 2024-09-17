@@ -1,4 +1,3 @@
-local session = require('codemp.session')
 local buffers = require('codemp.buffers')
 local workspace = require('codemp.workspace')
 local utils = require('codemp.utils')
@@ -33,15 +32,15 @@ local base_actions = {
 -- only available if state.client is not nil
 local connected_actions = {
 	id = function()
-		print("> codemp::" .. session.client.id)
+		print("> codemp::" .. CODEMP.client.id)
 	end,
 
 	join = function(ws)
 		if ws == nil then
 			local opts = { prompt = "Select workspace to join:", format_item = function (x) return x.name end }
-			return vim.ui.select(session.available, opts, function (choice)
+			return vim.ui.select(CODEMP.available, opts, function (choice)
 				if choice == nil then return end -- action canceled by user
-				workspace.join(session.available[choice].name)
+				workspace.join(CODEMP.available[choice].name)
 			end)
 		else
 			workspace.join(ws)
@@ -50,36 +49,36 @@ local connected_actions = {
 
 	start = function(ws)
 		if ws == nil then error("missing workspace name") end
-		session.client:create_workspace(ws):and_then(function ()
+		CODEMP.client:create_workspace(ws):and_then(function ()
 			print(" <> created workspace " .. ws)
 			workspace.list()
 		end)
 	end,
 
 	available = function()
-		for _, ws in ipairs(session.client:list_workspaces(true, false):await()) do
+		for _, ws in ipairs(CODEMP.client:list_workspaces(true, false):await()) do
 			print(" ++ " .. ws)
 		end
-		for _, ws in ipairs(session.client:list_workspaces(false, true):await()) do
+		for _, ws in ipairs(CODEMP.client:list_workspaces(false, true):await()) do
 			print(" -- " .. ws)
 		end
 	end,
 
 	invite = function(user)
 		local ws
-		if session.workspace ~= nil then
-			ws = session.workspace.name
+		if CODEMP.workspace ~= nil then
+			ws = CODEMP.workspace.name
 		else
 			ws = vim.fn.input("workspace > ", "")
 		end
-		session.client:invite_to_workspace(ws, user):and_then(function ()
+		CODEMP.client:invite_to_workspace(ws, user):and_then(function ()
 			print(" :: invited " .. user .. " to workspace " .. ws)
 		end)
 	end,
 
 	disconnect = function()
-		print(" xx disconnecting client " .. session.client.id)
-		session.client = nil -- should drop and thus close everything
+		print(" xx disconnecting client " .. CODEMP.client.id)
+		CODEMP.client = nil -- should drop and thus close everything
 	end,
 }
 
@@ -110,13 +109,13 @@ local joined_actions = {
 
 	delete = function(path)
 		if path == nil then error("missing buffer name") end
-		session.workspace:delete(path):and_then(function()
+		CODEMP.workspace:delete(path):and_then(function()
 			print(" xx  deleted buffer " .. path)
 		end)
 	end,
 
 	buffers = function()
-		for _, buf in ipairs(session.workspace:filetree()) do
+		for _, buf in ipairs(CODEMP.workspace:filetree()) do
 			if buffers.map_rev[buf] ~= nil then
 				print(" +- " .. buf)
 			else
@@ -141,7 +140,7 @@ local joined_actions = {
 			buffers.attach(p, buffer)
 		end
 		if path == nil then
-			local filetree = session.workspace:filetree(nil, false)
+			local filetree = CODEMP.workspace:filetree(nil, false)
 			return vim.ui.select(filetree, { prompt = "Select buffer to attach to:" }, function (choice)
 				if choice == nil then return end -- action canceled by user
 				doit(filetree[choice])
@@ -173,11 +172,11 @@ vim.api.nvim_create_user_command(
 			fn = base_actions[action]
 		end
 
-		if session.client ~= nil and connected_actions[action] ~= nil then
+		if CODEMP.client ~= nil and connected_actions[action] ~= nil then
 			fn = connected_actions[action]
 		end
 
-		if session.workspace ~= nil and joined_actions[action] ~= nil then
+		if CODEMP.workspace ~= nil and joined_actions[action] ~= nil then
 			fn = joined_actions[action]
 		end
 
@@ -203,13 +202,13 @@ vim.api.nvim_create_user_command(
 					n = n + 1
 					suggestions[n] = sugg
 				end
-				if session.client ~= nil then
+				if CODEMP.client ~= nil then
 					for sugg, _ in pairs(connected_actions) do
 						n = n + 1
 						suggestions[n] = sugg
 					end
 				end
-				if session.workspace ~= nil then
+				if CODEMP.workspace ~= nil then
 					for sugg, _ in pairs(joined_actions) do
 						n = n + 1
 						suggestions[n] = sugg
@@ -218,11 +217,11 @@ vim.api.nvim_create_user_command(
 				return filter(lead, suggestions)
 			elseif stage == 3 then
 				if args[#args-1] == 'attach' or args[#args-1] == 'detach' then
-					if session.client ~= nil and session.workspace ~= nil then
-						return filter(lead, session.workspace:filetree())
+					if CODEMP.client ~= nil and CODEMP.workspace ~= nil then
+						return filter(lead, CODEMP.workspace:filetree())
 					end
 				elseif args[#args-1] == 'join' then
-					return filter(lead, session.available, function(ws) return ws.name end)
+					return filter(lead, CODEMP.available, function(ws) return ws.name end)
 				end
 
 				return {}

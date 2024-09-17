@@ -1,5 +1,4 @@
 local utils = require('codemp.utils')
-local session = require('codemp.session')
 
 ---@type table<integer, string>
 local id_buffer_map = {}
@@ -24,7 +23,7 @@ local function attach(name, buffer, content, nowait)
 
 	vim.api.nvim_set_option_value('fileformat', 'unix', { buf = buffer })
 	vim.api.nvim_buf_set_name(buffer, name)
-	session.workspace:attach(name):and_then(function (controller)
+	CODEMP.workspace:attach(name):and_then(function (controller)
 		if not nowait then
 			local promise = controller:poll()
 			for i=1, 20, 1 do
@@ -139,7 +138,7 @@ local function detach(name)
 	local buffer = buffer_id_map[name]
 	id_buffer_map[buffer] = nil
 	buffer_id_map[name] = nil
-	session.workspace:detach(name)
+	CODEMP.workspace:detach(name)
 	vim.api.nvim_buf_delete(buffer, {})
 
 	print(" -- detached from buffer " .. name)
@@ -153,7 +152,7 @@ local function sync(buffer)
 	end
 	local name = id_buffer_map[buffer]
 	if name ~= nil then
-		local controller = session.workspace:get_buffer(name)
+		local controller = CODEMP.workspace:get_buffer(name)
 		if controller ~= nil then
 			local real_content = controller:content():await()
 			local my_content = utils.buffer.get_content(buffer)
@@ -175,10 +174,10 @@ local function create(buffer)
 	if buffer == nil then
 		buffer = vim.fn.expand("%p")
 	end
-	if session.workspace == nil then
+	if CODEMP.workspace == nil then
 		error("join a workspace first")
 	end
-	session.workspace:create(buffer):and_then(function ()
+	CODEMP.workspace:create(buffer):and_then(function ()
 		print(" ++  created buffer " .. buffer)
 		require('codemp.window').update()
 	end)

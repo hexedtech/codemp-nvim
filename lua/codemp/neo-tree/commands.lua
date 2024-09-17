@@ -2,7 +2,6 @@ local cc = require("neo-tree.sources.common.commands")
 local utils = require("neo-tree.utils")
 local codemp_utils = require("codemp.utils")
 local manager = require("neo-tree.sources.manager")
-local session = require("codemp.session")
 local buf_manager = require("codemp.buffers")
 local ws_manager = require("codemp.workspace")
 local client_manager = require("codemp.client")
@@ -27,16 +26,16 @@ M.open = function(state, path, extra)
 	if selected.type == "entry" then return end
 	if selected.type == "root" then return toggle(selected) end
 	if selected.type == "button" then
-		if selected.name == "[connect]" and session.client == nil then
+		if selected.name == "[connect]" and CODEMP.client == nil then
 			client_manager.connect()
 		end
 		return
 	end
 	if selected.type == "workspace" then
-		if session.workspace ~= nil and session.workspace.name ~= selected.name then
+		if CODEMP.workspace ~= nil and CODEMP.workspace.name ~= selected.name then
 			error("must leave current workspace first")
 		end
-		if session.workspace == nil then
+		if CODEMP.workspace == nil then
 			ws_manager.join(selected.name)
 		end
 		manager.refresh("codemp")
@@ -112,21 +111,21 @@ M.delete = function(state, path, extra)
 			manager.refresh("codemp")
 		end)
 	elseif selected.type == "buffer" then
-		if session.workspace == nil then error("join a workspace first") end
+		if CODEMP.workspace == nil then error("join a workspace first") end
 		vim.ui.input({ prompt = "delete buffer '" .. selected.name .. "'?" }, function (input)
 			if input == nil then return end
 			if not vim.startswith("y", string.lower(input)) then return end
-			session.workspace:delete(selected.name):and_then(function ()
+			CODEMP.workspace:delete(selected.name):and_then(function ()
 				print("deleted buffer " .. selected.name)
 				manager.refresh("codemp")
 			end)
 		end)
 	elseif selected.type == "workspace" then
-		if session.client == nil then error("connect to server first") end
+		if CODEMP.client == nil then error("connect to server first") end
 		vim.ui.input({ prompt = "delete buffer '" .. selected.name .. "'?" }, function (input)
 			if input == nil then return end
 			if not vim.startswith("y", string.lower(input)) then return end
-			session.client:delete_workspace(selected.name):and_then(function ()
+			CODEMP.client:delete_workspace(selected.name):and_then(function ()
 				print("deleted workspace " .. selected.name)
 				manager.refresh("codemp")
 			end)
@@ -140,14 +139,14 @@ M.add = function(state, path, extra)
 		if vim.startswith(selected.name, "#") then
 			vim.ui.input({ prompt = "new buffer path" }, function(input)
 				if input == nil or input == "" then return end
-				session.workspace:create(input):and_then(function ()
+				CODEMP.workspace:create(input):and_then(function ()
 					manager.refresh("codemp")
 				end)
 			end)
 		elseif selected.name == "workspaces" then
 			vim.ui.input({ prompt = "new workspace name" }, function(input)
 				if input == nil or input == "" then return end
-				session.client:create_workspace(input):and_then(function ()
+				CODEMP.client:create_workspace(input):and_then(function ()
 					require('codemp.workspace').list()
 				end)
 			end)
@@ -155,7 +154,7 @@ M.add = function(state, path, extra)
 	elseif selected.type == "workspace" then
 		vim.ui.input({ prompt = "user name to invite" }, function(input)
 			if input == nil or input == "" then return end
-			session.client:invite_to_workspace(selected.name, input):and_then(function ()
+			CODEMP.client:invite_to_workspace(selected.name, input):and_then(function ()
 				print("invited user " .. input .. " to workspace " .. selected.name)
 			end)
 		end)

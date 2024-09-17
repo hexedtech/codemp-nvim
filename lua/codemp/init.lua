@@ -1,14 +1,26 @@
+---@class WorkspaceReference
+---@field name string
+---@field owned boolean
+
 if CODEMP == nil then
 	---@class CodempGlobal
+	---@field rt? RuntimeDriver background codemp runtime
+	---@field client? Client currently connected client
+	---@field workspace? Workspace current active workspace
+	---@field available? WorkspaceReference[] available workspaces to connect to
+	---@field timer? any libuv timer
+	---@field config Config codemp configuration
+	---@field setup fun(opts: Config): nil update codemp configuration
 	CODEMP = {
 		rt = nil,
-		session = nil,
 		native = nil,
 		timer = nil,
 		config = {
 			neo_tree = false,
 			timer_interval = 20,
 			debug = false,
+			username = "",
+			password = "",
 		},
 		setup = function (opts)
 			CODEMP.config = vim.tbl_extend('force', CODEMP.config, opts)
@@ -26,19 +38,15 @@ if CODEMP.native == nil then
 	--end, true)
 end
 
-if CODEMP.session == nil then
-	CODEMP.session = require('codemp.session')
-end
-
 if CODEMP.rt == nil then
 	CODEMP.rt = CODEMP.native.spawn_runtime_driver() -- spawn thread to drive tokio runtime
 	vim.api.nvim_create_autocmd(
 		{"ExitPre"},
 		{
 			callback = function (_ev)
-				if CODEMP.session.client ~= nil then
+				if CODEMP.client ~= nil then
 					print(" xx disconnecting codemp client")
-					CODEMP.session.client = nil
+					CODEMP.client = nil
 				end
 				CODEMP.rt:stop()
 			end
