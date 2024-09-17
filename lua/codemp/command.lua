@@ -25,7 +25,6 @@ local base_actions = {
 
 	connect = function()
 		client.connect()
-		print(" ++ connected")
 	end,
 }
 
