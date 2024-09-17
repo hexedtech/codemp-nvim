@@ -45,9 +45,13 @@ if CODEMP == nil then
 			CODEMP.timer = vim.loop.new_timer()
 			CODEMP.timer:start(CODEMP.config.timer_interval, CODEMP.config.timer_interval, function()
 				while true do
-					local cb, arg = CODEMP.native.poll_callback()
-					if cb == nil then break end
-					vim.schedule(function() cb(arg) end)
+					local success, cb, arg = pcall(CODEMP.native.poll_callback)
+					if not success then
+						print(vim.inspect(cb))
+					else
+						if cb == nil then break end
+						vim.schedule(function() cb(arg) end)
+					end
 				end
 			end)
 
