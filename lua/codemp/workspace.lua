@@ -108,6 +108,7 @@ end
 ---@param workspace string workspace name to join
 ---join a workspace and register event handlers
 local function join(workspace)
+	print(" <> joining workspace " .. workspace .. " ...")
 	CODEMP.client:join_workspace(workspace):and_then(function (ws)
 		print(" >< joined workspace " .. ws.name)
 		register_cursor_callback(ws)

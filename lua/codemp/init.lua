@@ -7,7 +7,7 @@ if CODEMP == nil then
 	---@field rt? RuntimeDriver background codemp runtime
 	---@field client? Client currently connected client
 	---@field workspace? Workspace current active workspace
-	---@field available? WorkspaceReference[] available workspaces to connect to
+	---@field available WorkspaceReference[] available workspaces to connect to
 	---@field timer? any libuv timer
 	---@field config Config codemp configuration
 	---@field setup fun(opts: Config): nil update codemp configuration
@@ -15,6 +15,7 @@ if CODEMP == nil then
 		rt = nil,
 		native = nil,
 		timer = nil,
+		available = {},
 		config = {
 			neo_tree = false,
 			timer_interval = 20,
@@ -58,9 +59,9 @@ if CODEMP.timer == nil then
 	CODEMP.timer = vim.loop.new_timer()
 	CODEMP.timer:start(CODEMP.config.timer_interval, CODEMP.config.timer_interval, function()
 		while true do
-			local cb = CODEMP.native.poll_callback()
+			local cb, arg = CODEMP.native.poll_callback()
 			if cb == nil then break end
-			vim.schedule(function() cb() end)
+			vim.schedule(function() cb(arg) end)
 		end
 	end)
 

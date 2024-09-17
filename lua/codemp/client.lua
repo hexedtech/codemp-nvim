@@ -9,6 +9,7 @@ local function connect()
 	if tmp_cfg.password == nil or #tmp_cfg.password == 0 then
 		tmp_cfg.password = vim.g.codemp_password or vim.fn.input("password > ", "")
 	end
+	print(" -- connecting ...")
 	CODEMP.native.connect(tmp_cfg):and_then(function (client)
 		print(" ++ connected")
 		CODEMP.client = client
