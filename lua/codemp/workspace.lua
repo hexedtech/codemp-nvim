@@ -113,6 +113,8 @@ local function join(workspace)
 		print(" >< joined workspace " .. ws.name)
 		register_cursor_callback(ws)
 		register_cursor_handler(ws)
+		CODEMP.workspace = ws
+		require('codemp.window').update()
 		utils.poller(
 			function() return ws:event() end,
 			function(event)
@@ -137,9 +139,6 @@ local function join(workspace)
 				require('codemp.window').update()
 			end
 		)
-
-		CODEMP.workspace = ws
-		require('codemp.window').update()
 	end)
 end
 
