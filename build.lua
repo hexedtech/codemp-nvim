@@ -31,15 +31,26 @@ local native_path = plugin_dir..sep.."lua"..sep.."codemp"..sep.."new-native."..e
 local replace_native_path = plugin_dir..sep.."lua"..sep.."codemp"..sep.."native."..ext
 local download_url_native = string.format("https://codemp.dev/releases/lua/codemp-lua-%s-%s.%s", arch, platform, ext)
 
-local command = {
-	Windows_NT = { "Invoke-WebRequest", download_url_native, "-OutFile", native_path },
-	Linux = {"curl", "-o", native_path, download_url_native },
-	Mac = {"curl", "-o", native_path, download_url_native },
-}
-
 print("downloading codemp native lua extension from '" .. download_url_native .. "' ...")
-vim.system(command[os_uname.sysname]):wait() -- TODO can we run this asynchronously?
-print("downloaded! exit nvim to reload library")
+if os_uname.sysname == "Windows_NT" then
+	local handle, pid = vim.uv.spawn("powershell.exe", {
+		args = { "-Command", "Invoke-WebRequest "..download_url_native.." -OutFile "..native_path }
+	})
+
+	print("downloading in background... library will be installed upon restart")
+else
+	local res = vim.system({"curl", "-o", native_path, download_url_native }):wait() -- TODO can we run this asynchronously?
+	print(res.stdout)
+	print(res.stderr)
+	print(">> " .. res.code)
+	if res.code == 0 then
+		print("downloaded! exit nvim to reload library")
+	else
+		print("error downloading native library: " .. res.code)
+		print(res.stdout)
+		print(res.stderr)
+	end
+end
 
 vim.api.nvim_create_autocmd(
 	{"ExitPre"},
