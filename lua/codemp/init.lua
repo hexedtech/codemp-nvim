@@ -26,7 +26,7 @@ if CODEMP == nil then
 		setup = function (opts)
 			CODEMP.config = vim.tbl_extend('force', CODEMP.config, opts)
 			-- register logger
-			CODEMP.native.setup_tracing(CODEMP.config.print, CODEMP.config.debug)
+			CODEMP.native.setup_tracing(CODEMP.config.debug_file or print, CODEMP.config.debug)
 			-- start background runtime, with stop event
 			CODEMP.rt = CODEMP.native.setup_driver() -- spawn thread to drive tokio runtime
 			vim.api.nvim_create_autocmd(
