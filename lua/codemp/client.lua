@@ -1,4 +1,3 @@
-local session = require("codemp.session")
 local workspace = require("codemp.workspace")
 
 local function connect()
@@ -9,7 +8,7 @@ local function connect()
 		CODEMP.config.password = vim.g.codemp_password or vim.fn.input("password > ", "")
 	end
 	CODEMP.native.connect(CODEMP.config):and_then(function (client)
-		session.client = client
+		require('codemp.session').client = client
 		require('codemp.window').update()
 		workspace.list()
 	end)
