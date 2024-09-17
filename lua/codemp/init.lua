@@ -52,7 +52,7 @@ if CODEMP.timer == nil then
 		while true do
 			local cb = CODEMP.native.poll_callback()
 			if cb == nil then break end
-			cb()
+			vim.schedule(function() cb() end)
 		end
 	end)
 
