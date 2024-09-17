@@ -50,9 +50,10 @@ local connected_actions = {
 
 	start = function(ws)
 		if ws == nil then error("missing workspace name") end
-		session.client:create_workspace(ws):await()
-		vim.schedule(function () workspace.list() end)
-		print(" <> created workspace " .. ws)
+		session.client:create_workspace(ws):and_then(function ()
+			print(" <> created workspace " .. ws)
+			workspace.list()
+		end)
 	end,
 
 	available = function()
@@ -71,8 +72,9 @@ local connected_actions = {
 		else
 			ws = vim.fn.input("workspace > ", "")
 		end
-		session.client:invite_to_workspace(ws, user):await()
-		print(" ][ invited " .. user .. " to workspace " .. ws)
+		session.client:invite_to_workspace(ws, user):and_then(function ()
+			print(" :: invited " .. user .. " to workspace " .. ws)
+		end)
 	end,
 
 	disconnect = function()
@@ -108,8 +110,9 @@ local joined_actions = {
 
 	delete = function(path)
 		if path == nil then error("missing buffer name") end
-		session.workspace:delete(path):await()
-		print(" xx  deleted buffer " .. path)
+		session.workspace:delete(path):and_then(function()
+			print(" xx  deleted buffer " .. path)
+		end)
 	end,
 
 	buffers = function()

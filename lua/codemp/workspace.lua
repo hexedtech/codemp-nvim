@@ -12,22 +12,24 @@ local user_hl = {}
 
 local function fetch_workspaces_list()
 	local new_list = {}
-	local owned = session.client:list_workspaces(true, false):await()
-	for _, ws in pairs(owned) do
-		table.insert(new_list, {
-			name = ws,
-			owned = true,
-		})
-	end
-	local invited = session.client:list_workspaces(false, true):await()
-	for _, ws in pairs(invited) do
-		table.insert(new_list, {
-			name = ws,
-			owned = false,
-		})
-	end
-	session.available = new_list
-	require('codemp.window').update()
+	session.client:list_workspaces(true, false):and_then(function (owned)
+		for _, ws in pairs(owned) do
+			table.insert(new_list, {
+				name = ws,
+				owned = true,
+			})
+		end
+		session.client:list_workspaces(false, true):and_then(function (invited)
+			for _, ws in pairs(invited) do
+				table.insert(new_list, {
+					name = ws,
+					owned = false,
+				})
+			end
+			session.available = new_list
+			require('codemp.window').update()
+		end)
+	end)
 end
 
 ---@param ws Workspace
@@ -105,42 +107,40 @@ local function register_cursor_handler(ws)
 end
 
 ---@param workspace string workspace name to join
----@return Workspace
 ---join a workspace and register event handlers
 local function join(workspace)
-	local ws = session.client:join_workspace(workspace):await()
-	print(" >< joined workspace " .. ws.name)
-	register_cursor_callback(ws)
-	register_cursor_handler(ws)
-	utils.poller(
-		function() return ws:event() end,
-		function(event)
-			if event.type == "leave" then
-				if buffers.users[event.value] ~= nil then
-					local buf_name = buffers.users[event.value]
-					local buf_id = buffers.map_rev[buf_name]
-					if buf_id ~= nil then
-						vim.api.nvim_buf_clear_namespace(buf_id, user_hl[event.value].ns, 0, -1)
+	session.client:join_workspace(workspace):and_then(function (ws)
+		print(" >< joined workspace " .. ws.name)
+		register_cursor_callback(ws)
+		register_cursor_handler(ws)
+		utils.poller(
+			function() return ws:event() end,
+			function(event)
+				if event.type == "leave" then
+					if buffers.users[event.value] ~= nil then
+						local buf_name = buffers.users[event.value]
+						local buf_id = buffers.map_rev[buf_name]
+						if buf_id ~= nil then
+							vim.api.nvim_buf_clear_namespace(buf_id, user_hl[event.value].ns, 0, -1)
+						end
+						buffers.users[event.value] = nil
+						user_hl[event.value] = nil
 					end
-					buffers.users[event.value] = nil
-					user_hl[event.value] = nil
+				elseif event.type == "join" then
+					buffers.users[event.value] = ""
+					user_hl[event.value] = {
+						ns = vim.api.nvim_create_namespace("codemp-cursor-" .. event.value),
+						hi = utils.color(event.value),
+						pos = { 0, 0 },
+					}
 				end
-			elseif event.type == "join" then
-				buffers.users[event.value] = ""
-				user_hl[event.value] = {
-					ns = vim.api.nvim_create_namespace("codemp-cursor-" .. event.value),
-					hi = utils.color(event.value),
-					pos = { 0, 0 },
-				}
+				require('codemp.window').update()
 			end
-			require('codemp.window').update()
-		end
-	)
+		)
 
-	session.workspace = ws
-	require('codemp.window').update()
-
-	return ws
+		session.workspace = ws
+		require('codemp.window').update()
+	end)
 end
 
 local function leave()

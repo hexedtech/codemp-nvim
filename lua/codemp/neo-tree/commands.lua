@@ -116,18 +116,20 @@ M.delete = function(state, path, extra)
 		vim.ui.input({ prompt = "delete buffer '" .. selected.name .. "'?" }, function (input)
 			if input == nil then return end
 			if not vim.startswith("y", string.lower(input)) then return end
-			session.workspace:delete(selected.name):await()
-			print("deleted buffer " .. selected.name)
-			manager.refresh("codemp")
+			session.workspace:delete(selected.name):and_then(function ()
+				print("deleted buffer " .. selected.name)
+				manager.refresh("codemp")
+			end)
 		end)
 	elseif selected.type == "workspace" then
 		if session.client == nil then error("connect to server first") end
 		vim.ui.input({ prompt = "delete buffer '" .. selected.name .. "'?" }, function (input)
 			if input == nil then return end
 			if not vim.startswith("y", string.lower(input)) then return end
-			session.client:delete_workspace(selected.name):await()
-			print("deleted workspace " .. selected.name)
-			manager.refresh("codemp")
+			session.client:delete_workspace(selected.name):and_then(function ()
+				print("deleted workspace " .. selected.name)
+				manager.refresh("codemp")
+			end)
 		end)
 	end
 end
@@ -138,21 +140,24 @@ M.add = function(state, path, extra)
 		if vim.startswith(selected.name, "#") then
 			vim.ui.input({ prompt = "new buffer path" }, function(input)
 				if input == nil or input == "" then return end
-				session.workspace:create(input):await()
-				manager.refresh("codemp")
+				session.workspace:create(input):and_then(function ()
+					manager.refresh("codemp")
+				end)
 			end)
 		elseif selected.name == "workspaces" then
 			vim.ui.input({ prompt = "new workspace name" }, function(input)
 				if input == nil or input == "" then return end
-				session.client:create_workspace(input):await()
-				vim.schedule(function () require('codemp.workspace').list() end)
+				session.client:create_workspace(input):and_then(function ()
+					require('codemp.workspace').list()
+				end)
 			end)
 		end
 	elseif selected.type == "workspace" then
 		vim.ui.input({ prompt = "user name to invite" }, function(input)
 			if input == nil or input == "" then return end
-			session.client:invite_to_workspace(selected.name, input):await()
-			print("invited user " .. input .. " to workspace " .. selected.name)
+			session.client:invite_to_workspace(selected.name, input):and_then(function ()
+				print("invited user " .. input .. " to workspace " .. selected.name)
+			end)
 		end)
 	end
 	manager.refresh("codemp")

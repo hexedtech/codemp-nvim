@@ -8,9 +8,11 @@ local function connect()
 	if CODEMP.config.password == nil then
 		CODEMP.config.password = vim.g.codemp_password or vim.fn.input("password > ", "")
 	end
-	session.client = CODEMP.native.connect(CODEMP.config):await()
-	require('codemp.window').update()
-	vim.schedule(function () workspace.list() end)
+	CODEMP.native.connect(CODEMP.config):and_then(function (client)
+		session.client = client
+		require('codemp.window').update()
+		workspace.list()
+	end)
 end
 
 return {
