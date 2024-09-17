@@ -13,9 +13,13 @@ as well as a remote virtual workspace for you and your team.
 This is the reference codemp [neovim](https://neovim.io) plugin maintained by [hexedtech](https://hexed.technology)
 
 # installation
-Currently only [lazy.nvim](https://github.com/folke/lazy.nvim) is supported, but codemp should work with any plugin manager able to run `build.lua` upon installation and update.
+Just add `hexedtech/codemp-nvim` to your plugin spec.
 
-Just add `hexedtech/codemp-nvim` in your plugin spec.
+If you're using [`lazy.nvim`](https://github.com/folke/lazy.nvim), everything will be configured automatically!
+
+If you're using something else to load `codemp-nvim`, you need to also do the following:
+ * run `build.lua` during installation and every update
+ * invoke `require('codemp-nvim').setup({ ... })` after loading, pass your config
 
 Note that the native codemp lua library will be downloaded automatically on each update.
 

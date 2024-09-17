@@ -1,3 +1,14 @@
+-- this is the codemp updater for nvim
+--
+-- it basically detects your operating system and architecture to
+-- decide which native extension to download, then it downloads
+-- from https://codemp.dev/release/lua/. If this doesn't work for
+-- you or you don't trust periodic binary downloads, feel free to
+-- remove this file (or its content). remember to place the
+-- `native.(so|dll|dylib)` file in this plugin folder, next to
+-- the `loader.lua` file.
+
+
 local plugin_dir = vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":p:h") -- got this from https://lazy.folke.io/developers#building
 
 local os_uname = vim.loop.os_uname()
