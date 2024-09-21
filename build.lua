@@ -38,9 +38,11 @@ end
 local sep = '/'
 if os_uname.sysname == "Windows_NT" then sep = '\\' end
 
+local version = "v0.7.0"
+
 local native_path = plugin_dir..sep.."lua"..sep.."codemp"..sep.."new-native."..ext
 local replace_native_path = plugin_dir..sep.."lua"..sep.."codemp"..sep.."native."..ext
-local download_url_native = string.format("https://codemp.dev/releases/lua/codemp-lua-%s-%s.%s", arch, platform, ext)
+local download_url_native = string.format("https://codemp.dev/releases/lua/codemp-lua-%s-%s-%s.%s", version, arch, platform, ext)
 
 print("downloading codemp native lua extension from '" .. download_url_native .. "' ...")
 if os_uname.sysname == "Windows_NT" then
