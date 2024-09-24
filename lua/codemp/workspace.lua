@@ -88,6 +88,22 @@ local function register_cursor_handler(ws)
 				buffers.users[event.user] = event.buffer
 				local buffer_id = buffers.map_rev[event.buffer]
 				if buffer_id ~= nil then
+					vim.api.nvim_buf_set_extmark(
+						buffer_id,
+						user_hl[event.user].ns,
+						event.start[1],
+						event.start[2],
+						{
+							end_col = event.finish[1],
+							end_row = event.finish[2],
+							hl_group = user_hl[event.user].hi,
+							hl_eol = true,
+							virt_text_pos = "overlay",
+							virt_text = {
+								{ event.user, "InlayHint" }
+							},
+						}
+					)
 					utils.multiline_highlight(
 						buffer_id,
 						user_hl[event.user].ns,

@@ -165,26 +165,6 @@ local function buffer_set_content(buf, content, first, last)
 	end
 end
 
----@param buf integer buffer to highlight onto
----@param ns integer namespace for highlight
----@param group string highlight group
----@param start [integer, integer]
----@param fini [integer, integer]
-local function multiline_highlight(buf, ns, group, start, fini)
-	for i=start[1],fini[1] do
-		if i == start[1] and i == fini[1] then
-			local fini_col = fini[2]
-			if start[2] == fini[2] then fini_col = fini_col + 1 end
-			vim.api.nvim_buf_add_highlight(buf, ns, group, i, start[2], fini_col)
-		elseif i == start[1] then
-			vim.api.nvim_buf_add_highlight(buf, ns, group, i, start[2], -1)
-		elseif i == fini[1] then
-			vim.api.nvim_buf_add_highlight(buf, ns, group, i, 0, fini[2])
-		else
-			vim.api.nvim_buf_add_highlight(buf, ns, group, i, 0, -1)
-		end
-	end
-end
 
 local function buffer_len(buf)
 	local count = 0
@@ -203,8 +183,10 @@ local function separator()
 	end
 end
 
+local hash_fn = nil
+if native ~= nil then hash_fn = native.hash end
+
 return {
-	multiline_highlight = multiline_highlight,
 	cursor = {
 		position = cursor_position,
 	},
@@ -213,7 +195,7 @@ return {
 		get_content = buffer_get_content,
 		set_content = buffer_set_content,
 	},
-	hash = native.hash,
+	hash = hash_fn,
 	available_colors = available_colors,
 	color = color,
 	poller = async_poller,
