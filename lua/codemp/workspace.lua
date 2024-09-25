@@ -32,6 +32,8 @@ local function fetch_workspaces_list()
 	end)
 end
 
+local last_jump = { 0, 0 }
+
 ---@param ws Workspace
 local function register_cursor_callback(ws)
 	local controller = ws.cursor
@@ -133,7 +135,13 @@ local function register_cursor_handler(ws)
 						if curr_buf ~= buf_id then
 							vim.api.nvim_win_set_buf(win, buf_id)
 						end
-						vim.api.nvim_win_set_cursor(win, { event.start[1] + 1, event.start[2] })
+						-- keep centered the cursor end that is currently being moved, but prefer start
+						if event.start[1] == last_jump[1] and event.start[2] == last_jump[2] then
+							vim.api.nvim_win_set_cursor(win, { event.finish[1] + 1, event.finish[2] })
+						else
+							vim.api.nvim_win_set_cursor(win, { event.start[1] + 1, event.start[2] })
+						end
+						last_jump = event.start
 					end
 				end
 			end
