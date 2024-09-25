@@ -13,6 +13,10 @@ local ticks = {}
 ---@param content? string if provided, set this content after attaching
 ---@param nowait? boolean skip waiting for initial content sync
 local function attach(name, buffer, content, nowait)
+	if vim.fn.bufexists(name) then
+		error("buffer '" .. name .. "' already exists!")
+	end
+
 	if buffer_id_map[name] ~= nil then
 		error("already attached to buffer " .. name)
 	end
@@ -24,6 +28,7 @@ local function attach(name, buffer, content, nowait)
 	vim.api.nvim_set_option_value('fileformat', 'unix', { buf = buffer })
 	vim.api.nvim_buf_set_name(buffer, name)
 	CODEMP.workspace:attach(name):and_then(function (controller)
+		-- TODO disgusting! but poll blocks forever on empty buffers...
 		if not nowait then
 			local promise = controller:poll()
 			for i=1, 20, 1 do
