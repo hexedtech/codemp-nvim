@@ -12,6 +12,8 @@ as well as a remote virtual workspace for you and your team.
 
 This is the reference codemp [neovim](https://neovim.io) plugin maintained by [hexedtech](https://hexed.technology)
 
+> compare development status with our [feature comparison matrix](https://github.com/orgs/hexedtech/projects/3)
+
 # installation
 Just add `hexedtech/codemp-nvim` to your plugin spec.
 
