@@ -88,6 +88,7 @@ local function register_cursor_handler(ws)
 				buffers.users[event.user] = event.buffer
 				local buffer_id = buffers.map_rev[event.buffer]
 				if buffer_id ~= nil then
+					local hi = user_hl[event.user].hi
 					vim.api.nvim_buf_set_extmark(
 						buffer_id,
 						user_hl[event.user].ns,
@@ -96,13 +97,16 @@ local function register_cursor_handler(ws)
 						{
 							end_row = event.finish[1],
 							end_col = event.finish[2],
-							hl_group = user_hl[event.user].hi.bg,
+							hl_group = hi.bg,
 							virt_text_pos = "right_align",
 							sign_text = string.sub(event.user, 0, 1),
-							sign_hl_group = user_hl[event.user].hi.fg,
+							sign_hl_group = hi.bg,
+							virt_text_repeat_linebreak = true,
+							priority = 1000,
 							strict = false,
 							virt_text = {
-								{ event.user, user_hl[event.user].hi.fg }
+								{ event.user .. " ", hi.fg },
+								{ " ", hi.bg },
 							},
 						}
 					)
