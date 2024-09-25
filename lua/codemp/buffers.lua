@@ -13,7 +13,7 @@ local ticks = {}
 ---@param content? string if provided, set this content after attaching
 ---@param nowait? boolean skip waiting for initial content sync
 local function attach(name, buffer, content, nowait)
-	if vim.fn.bufexists(name) then
+	if vim.fn.bufexists(name) == 1 then
 		error("buffer '" .. name .. "' already exists!")
 	end
 
