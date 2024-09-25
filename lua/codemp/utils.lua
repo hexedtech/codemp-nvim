@@ -10,8 +10,8 @@ local colors = {
 
 local function setup_colors()
 	for n, color in ipairs(colors) do
-		vim.api.nvim_set_hl(0, string.format("CodempUser#%s", n), { fg = color[1], bg = nil, ctermfg = color[2], ctermbg = 0 })
-		vim.api.nvim_set_hl(0, string.format("CodempUserInverted#%s", n), { fg = "#201F29", bg = color[1], ctermfg = 234, ctermbg = color[2] })
+		vim.api.nvim_set_hl(0, string.format("CodempUser%s", n), { fg = color[1], bg = nil, ctermfg = color[2], ctermbg = 0 })
+		vim.api.nvim_set_hl(0, string.format("CodempUserInverted%s", n), { fg = "#201F29", bg = color[1], ctermfg = 234, ctermbg = color[2] })
 	end
 end
 
@@ -24,8 +24,8 @@ end
 local function color(name)
 	local index = math.fmod(math.abs(CODEMP.native.hash(name)), #colors) + 1
 	return {
-		fg = "CodempUser#" .. index,
-		bg = "CodempUserInverted#" .. index,
+		fg = "CodempUser" .. index,
+		bg = "CodempUserInverted" .. index,
 	}
 end
 
