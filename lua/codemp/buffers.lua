@@ -140,7 +140,6 @@ local function detach(name)
 	id_buffer_map[buffer] = nil
 	buffer_id_map[name] = nil
 	CODEMP.workspace:detach(name)
-	vim.api.nvim_buf_delete(buffer, {})
 
 	print(" -- detached from buffer " .. name)
 	require('codemp.window').update()
