@@ -47,6 +47,7 @@ local function register_cursor_callback(ws)
 			elseif CODEMP.following ~= nil then
 				print(" / / unfollowing " .. CODEMP.following)
 				CODEMP.following = nil
+				require('codemp.window').update()
 			end
 			local cur = utils.cursor.position()
 			local buf = vim.api.nvim_get_current_buf()

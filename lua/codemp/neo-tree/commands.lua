@@ -73,6 +73,7 @@ M.open = function(state, path, extra)
 				vim.api.nvim_win_set_cursor(win, { usr.pos[1] + 1, usr.pos[2] })
 			end
 		end
+		manager.refresh("codemp")
 		return
 	end
 	error("unrecognized node type")

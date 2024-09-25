@@ -46,7 +46,11 @@ M.icon = function(config, node, state)
 			highlight = highlights.DIRECTORY_ICON
 		end
 	elseif node.type == "user" then
-		icon = ":"
+		if node.name == CODEMP.following then
+			icon = "="
+		else
+			icon = ":"
+		end
 		highlight = codemp_utils.color(node.name).bg
 	elseif node.type == "entry" then
 		icon = "$"
