@@ -10,12 +10,16 @@ if CODEMP == nil then
 	---@field available WorkspaceReference[] available workspaces to connect to
 	---@field timer? any libuv timer
 	---@field config Config codemp configuration
+	---@field following string | nil
+	---@field ignore_following_action boolean TODO a more elegant solution?
 	---@field setup fun(opts: Config): nil update config and setup plugin
 	CODEMP = {
 		rt = nil,
 		native = nil,
 		timer = nil,
 		available = {},
+		following = nil,
+		ignore_following_action = false,
 		config = {
 			neo_tree = false,
 			timer_interval = 20,

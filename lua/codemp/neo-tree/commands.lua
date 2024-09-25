@@ -53,17 +53,24 @@ M.open = function(state, path, extra)
 		return
 	end
 	if selected.type == "user" then
+		if CODEMP.workspace == nil then error("cannot follow while not in a workspace") end
 		local usr = ws_manager.map[selected.name]
+		print(" /\\/ following " .. selected.name)
+		CODEMP.following = selected.name
+		local _ = CODEMP.workspace.cursor:send({
+			buffer = "",
+			start = { 0, 0 },
+			finish = { 0, 0 },
+		}) -- clear current cursor
 		if usr ~= nil then
 			local buf_name = buf_manager.users[selected.name]
 			local buf_id = buf_manager.map_rev[buf_name]
 			if buf_id ~= nil then
 				local win = utils.get_appropriate_window(state)
+				CODEMP.ignore_following_action = true
 				vim.api.nvim_set_current_win(win)
 				vim.api.nvim_win_set_buf(win, buf_id)
 				vim.api.nvim_win_set_cursor(win, { usr.pos[1] + 1, usr.pos[2] })
-			else
-				print(" /!\\ not attached to buffer '" .. buf_name .. "'")
 			end
 		end
 		return

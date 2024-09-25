@@ -92,6 +92,7 @@ local function attach(name, buffer, content, nowait)
 				local event = controller:try_recv():await()
 				if event == nil then break end
 				ticks[buffer] = vim.api.nvim_buf_get_changedtick(buffer)
+				CODEMP.ignore_following_action = true
 				if CODEMP.config.debug then
 					print(" ~~ applying change ~~ " .. event.start .. ".." .. event.finish .. "::[" .. event.content .. "]")
 				end

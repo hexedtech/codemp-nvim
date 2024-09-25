@@ -38,7 +38,14 @@ local function register_cursor_callback(ws)
 	local once = true
 	vim.api.nvim_create_autocmd({"CursorMoved", "CursorMovedI", "ModeChanged"}, {
 		group = vim.api.nvim_create_augroup("codemp-workspace-" .. ws.name, { clear = true }),
-		callback = function (_)
+		callback = function (ev)
+			if CODEMP.ignore_following_action then
+				CODEMP.ignore_following_action = false
+				return
+			elseif CODEMP.following ~= nil then
+				print(" / / unfollowing " .. CODEMP.following)
+				CODEMP.following = nil
+			end
 			local cur = utils.cursor.position()
 			local buf = vim.api.nvim_get_current_buf()
 			if buffers.map[buf] ~= nil then
@@ -116,6 +123,18 @@ local function register_cursor_handler(ws)
 				end
 				if old_buffer ~= event.buffer then
 					require('codemp.window').update() -- redraw user positions
+				end
+				if CODEMP.following ~= nil and CODEMP.following == event.user then
+					local buf_id = buffers.map_rev[event.buffer]
+					if buf_id ~= nil then
+						local win = vim.api.nvim_get_current_win()
+						local curr_buf = vim.api.nvim_get_current_buf()
+						CODEMP.ignore_following_action = true
+						if curr_buf ~= buf_id then
+							vim.api.nvim_win_set_buf(win, buf_id)
+						end
+						vim.api.nvim_win_set_cursor(win, { event.start[1] + 1, event.start[2] })
+					end
 				end
 			end
 		end
