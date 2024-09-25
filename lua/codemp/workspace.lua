@@ -4,6 +4,7 @@ local buffers = require('codemp.buffers')
 ---@class UserHighlight
 ---@field ns integer namespace to use for this user
 ---@field hi HighlightPair color for user to use
+---@field mark integer extmark id
 ---@field pos [integer, integer] cursor start position of this user
 
 ---@type table<string, UserHighlight>
@@ -74,6 +75,7 @@ local function register_cursor_handler(ws)
 					user_hl[user] = {
 						ns = vim.api.nvim_create_namespace("codemp-cursor-" .. event.user),
 						hi = utils.color(event.user),
+						mark = nil,
 						pos = { 0, 0 },
 					}
 				end
@@ -89,12 +91,13 @@ local function register_cursor_handler(ws)
 				local buffer_id = buffers.map_rev[event.buffer]
 				if buffer_id ~= nil then
 					local hi = user_hl[event.user].hi
-					vim.api.nvim_buf_set_extmark(
+					user_hl[event.user].mark = vim.api.nvim_buf_set_extmark(
 						buffer_id,
 						user_hl[event.user].ns,
 						event.start[1],
 						event.start[2],
 						{
+							id = user_hl[event.user].mark,
 							end_row = event.finish[1],
 							end_col = event.finish[2],
 							hl_group = hi.bg,
