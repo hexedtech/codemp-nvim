@@ -4,7 +4,7 @@ local buffers = require('codemp.buffers')
 ---@class UserHighlight
 ---@field ns integer namespace to use for this user
 ---@field hi HighlightPair color for user to use
----@field mark integer extmark id
+---@field mark integer | nil extmark id
 ---@field pos [integer, integer] cursor start position of this user
 
 ---@type table<string, UserHighlight>
@@ -160,6 +160,15 @@ local function join(workspace)
 		register_cursor_callback(ws)
 		register_cursor_handler(ws)
 		CODEMP.workspace = ws
+		for _, user in pairs(CODEMP.workspace:user_list()) do
+			buffers.users[user] = ""
+			user_hl[user] = {
+				ns = vim.api.nvim_create_namespace("codemp-cursor-" .. user),
+				hi = utils.color(user),
+				pos = { 0, 0 },
+				mark = nil,
+			}
+		end
 		require('codemp.window').update()
 		utils.poller(
 			function() return ws:event() end,
@@ -180,6 +189,7 @@ local function join(workspace)
 						ns = vim.api.nvim_create_namespace("codemp-cursor-" .. event.value),
 						hi = utils.color(event.value),
 						pos = { 0, 0 },
+						mark = nil,
 					}
 				end
 				require('codemp.window').update()
