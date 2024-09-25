@@ -3,7 +3,7 @@ local buffers = require('codemp.buffers')
 
 ---@class UserHighlight
 ---@field ns integer namespace to use for this user
----@field hi string color for user to use
+---@field hi HighlightPair color for user to use
 ---@field pos [integer, integer] cursor start position of this user
 
 ---@type table<string, UserHighlight>
@@ -94,22 +94,17 @@ local function register_cursor_handler(ws)
 						event.start[1],
 						event.start[2],
 						{
-							end_col = event.finish[1],
-							end_row = event.finish[2],
-							hl_group = user_hl[event.user].hi,
-							hl_eol = true,
-							virt_text_pos = "overlay",
+							end_row = event.finish[1],
+							end_col = event.finish[2],
+							hl_group = user_hl[event.user].hi.bg,
+							virt_text_pos = "right_align",
+							sign_text = string.sub(event.user, 0, 1),
+							sign_hl_group = user_hl[event.user].hi.fg,
+							strict = false,
 							virt_text = {
-								{ event.user, "InlayHint" }
+								{ event.user, user_hl[event.user].hi.fg }
 							},
 						}
-					)
-					utils.multiline_highlight(
-						buffer_id,
-						user_hl[event.user].ns,
-						user_hl[event.user].hi,
-						event.start,
-						event.finish
 					)
 				end
 				if old_buffer ~= event.buffer then
@@ -170,4 +165,5 @@ return {
 	leave = leave,
 	map = user_hl,
 	list = fetch_workspaces_list,
+	setup_colors = setup_colors,
 }

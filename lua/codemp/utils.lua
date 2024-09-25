@@ -1,19 +1,32 @@
-local native = require('codemp.loader').load()
-
-local available_colors = { -- TODO these are definitely not portable!
-	"ErrorMsg",
-	"WarningMsg",
-	"MatchParen",
-	"SpecialMode",
-	"CmpItemKindFunction",
-	"CmpItemKindValue",
-	"CmpItemKindInterface",
+local colors = {
+	{ "#AC7EA8", 175 },
+	{ "#81A1C1", 74  },
+	{ "#EBCB8B", 222 },
+	{ "#2E8757", 72  },
+	{ "#BF616A", 167 },
+	{ "#8F81D4", 98  },
+	{ "#D69C63", 179 },
 }
 
----@param x string
----@return string
-local function color(x)
-	return available_colors[ math.fmod(math.abs(native.hash(x)), #available_colors) + 1 ]
+local function setup_colors()
+	for n, color in ipairs(colors) do
+		vim.api.nvim_set_hl(0, string.format("CodempUser#%s", n), { fg = color[1], bg = nil, ctermfg = color[2], ctermbg = 0 })
+		vim.api.nvim_set_hl(0, string.format("CodempUserInverted#%s", n), { fg = "#201F29", bg = color[1], ctermfg = 234, ctermbg = color[2] })
+	end
+end
+
+---@class HighlightPair
+---@field fg string
+---@field bg string
+
+---@param name string
+---@return HighlightPair
+local function color(name)
+	local index = math.fmod(math.abs(CODEMP.native.hash(name)), #colors) + 1
+	return {
+		fg = "CodempUser#" .. index,
+		bg = "CodempUserInverted#" .. index,
+	}
 end
 
 local function async_poller(generator, callback)
@@ -183,9 +196,6 @@ local function separator()
 	end
 end
 
-local hash_fn = nil
-if native ~= nil then hash_fn = native.hash end
-
 return {
 	cursor = {
 		position = cursor_position,
@@ -195,9 +205,9 @@ return {
 		get_content = buffer_get_content,
 		set_content = buffer_set_content,
 	},
-	hash = hash_fn,
 	available_colors = available_colors,
 	color = color,
 	poller = async_poller,
 	sep = separator,
+	setup_colors = setup_colors,
 }

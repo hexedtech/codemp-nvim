@@ -97,7 +97,7 @@ local function attach(name, buffer, content, nowait)
 				end
 				utils.buffer.set_content(buffer, event.content, event.start, event.finish)
 				if event.hash ~= nil then
-					if utils.hash(utils.buffer.get_content(buffer)) ~= event.hash then
+					if CODEMP.native.hash(utils.buffer.get_content(buffer)) ~= event.hash then
 						-- OUT OF SYNC!
 						-- TODO this may be destructive! we should probably prompt the user before doing this
 						print(" /!\\ out of sync, resynching...")

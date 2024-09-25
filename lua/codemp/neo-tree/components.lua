@@ -47,7 +47,7 @@ M.icon = function(config, node, state)
 		end
 	elseif node.type == "user" then
 		icon = ":"
-		highlight = codemp_utils.color(node.name)
+		highlight = codemp_utils.color(node.name).bg
 	elseif node.type == "entry" then
 		icon = "$"
 		highlight = highlights.GIT_STAGED
@@ -94,7 +94,7 @@ M.users = function(config, node, state)
 		if buf == node.name then
 			table.insert(out, {
 				text = " ",
-				highlight = codemp_utils.color(user),
+				highlight = codemp_utils.color(user).bg,
 				align = "end",
 			})
 		end

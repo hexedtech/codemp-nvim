@@ -77,11 +77,11 @@ local function update_window()
 		if off[row] == nil then
 			off[row] = 0
 		end
-		vim.highlight.range(buffer_id, ns, utils.color(user), {row-1,4+off[row]}, {row-1, 5+off[row]})
+		vim.highlight.range(buffer_id, ns, utils.color(user).bg, {row-1,4+off[row]}, {row-1, 5+off[row]})
 		off[row] = off[row] + 1
 		row = user_to_row[user]
 		vim.highlight.range(buffer_id, ns, 'InlayHint', {row-1, 0}, {row-1, 1})
-		vim.highlight.range(buffer_id, ns, utils.color(user), {row-1, 2}, {row-1, 3})
+		vim.highlight.range(buffer_id, ns, utils.color(user).bg, {row-1, 2}, {row-1, 3})
 	end
 	vim.api.nvim_set_option_value('modifiable', false, { buf = buffer_id })
 end

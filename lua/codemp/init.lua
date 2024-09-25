@@ -56,6 +56,7 @@ if CODEMP == nil then
 			end)
 
 			require('codemp.command') -- not really related but should only happen once
+			require('codemp.utils').setup_colors() -- create highlight groups for users
 		end
 	}
 end
