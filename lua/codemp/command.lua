@@ -55,12 +55,16 @@ local connected_actions = {
 	end,
 
 	available = function()
+		CODEMP.available = {}
 		for _, ws in ipairs(CODEMP.client:list_workspaces(true, false):await()) do
 			print(" ++ " .. ws)
+			table.insert(CODEMP.available, ws)
 		end
 		for _, ws in ipairs(CODEMP.client:list_workspaces(false, true):await()) do
 			print(" -- " .. ws)
+			table.insert(CODEMP.available, ws)
 		end
+		require('codemp.window').update()
 	end,
 
 	invite = function(user)
