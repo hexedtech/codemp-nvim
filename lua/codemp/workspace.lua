@@ -150,6 +150,8 @@ local function register_cursor_handler(controller)
 	controller:callback(function (_controller) async:send() end)
 end
 
+local events_poller = nil
+
 ---@param workspace string workspace name to join
 ---join a workspace and register event handlers
 local function join(workspace)
@@ -169,8 +171,14 @@ local function join(workspace)
 			}
 		end
 		require('codemp.window').update()
-		utils.poller(
-			function() return ws:event() end,
+		local ws_name = ws.name
+		events_poller = utils.poller(
+			function()
+				if CODEMP.client == nil then return nil end
+				local wspace = CODEMP.client:get_workspace(ws_name)
+				if wspace == nil then return nil end
+				return wspace:event()
+			end,
 			function(event)
 				if event.type == "leave" then
 					if buffers.users[event.value] ~= nil then
@@ -198,9 +206,21 @@ local function join(workspace)
 end
 
 local function leave()
-	CODEMP.client:leave_workspace(CODEMP.workspace.name)
-	print(" -- left workspace")
+	local name = CODEMP.workspace.name
 	CODEMP.workspace = nil
+	if events_poller ~= nil then
+		events_poller:stop()
+		events_poller = nil
+	end
+	if not CODEMP.client:leave_workspace(name) then
+		collectgarbage("collect")
+		-- TODO codemp disconnects when all references to its objects are dropped. since it
+		-- hands out Arc<> of things, all references still not garbage collected in Lua will
+		-- prevent it from disconnecting. while running a full cycle may be a bit slow, this
+		-- only happens when manually requested, and it's not like the extra garbage collection
+		-- is an effort for nothing... still it would be more elegant to not need this!!
+	end
+	print(" -- left workspace " .. name)
 	require('codemp.window').update()
 end
 

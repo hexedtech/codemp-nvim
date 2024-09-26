@@ -29,18 +29,44 @@ local function color(name)
 	}
 end
 
+---@class AsyncPoller
+---@field promise WorkspaceEventPromise | nil
+---@field timer luv.Timer
+---@field generator fun(): WorkspaceEventPromise
+---@field callback fun(e: WorkspaceEvent)
+---@field stop fun(self: AsyncPoller)
+
+---@return AsyncPoller
 local function async_poller(generator, callback)
-	local promise = nil
-	local timer = vim.loop.new_timer()
-	timer:start(500, 500, function()
-		if promise == nil then promise = generator() end
-		if promise.ready then
-			local res = promise:await()
-			vim.schedule(function() callback(res) end)
-			promise = nil
+	---@type AsyncPoller
+	local poller = {
+		promise = nil,
+		generator = generator,
+		callback = callback,
+		timer = vim.uv.new_timer(),
+		stop = function (this)
+			print("stopping async poller")
+			if this.promise ~= nil then
+				-- TODO the :abort() change still hasnt been merged, so check for its presence!
+				if this.promise.abort ~= nil then
+					this.promise:abort()
+				end
+			end
+			this.timer:stop()
+			this.timer:close()
+		end
+	}
+	poller.timer:start(500, 500, function()
+		print("ticking poller")
+		if poller.promise == nil then poller.promise = poller.generator() end
+		if poller.promise.ready then
+			print("spawning callback")
+			local res = poller.promise:await()
+			vim.schedule(function() poller.callback(res) end)
+			poller.promise = nil
 		end
 	end)
-
+	return poller
 end
 
 ---@param first integer
