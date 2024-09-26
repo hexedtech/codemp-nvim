@@ -164,6 +164,15 @@ M.add = function(state, path, extra)
 				print("invited user " .. input .. " to workspace " .. selected.name)
 			end)
 		end)
+	elseif selected.type == "buffer" then
+		if buf_manager.map_rev[selected.name] ~= nil then
+			vim.ui.input({ prompt = "detach from '" .. selected.name .. "'?" }, function (choice)
+				if not vim.startswith(string.lower(choice), "y") then return end
+				if not CODEMP.workspace:detach(selected.name) then
+					print(" /!\\ dangling reference, detach incomplete")
+				end
+			end)
+		end
 	end
 end
 
