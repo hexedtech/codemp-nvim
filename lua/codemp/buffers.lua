@@ -8,19 +8,38 @@ local buffer_id_map = {}
 local user_buffer_name = {}
 local ticks = {}
 
+---@class AttachOptions
+---@field content? string if provided, set this as content after attaching
+---@field nowait? boolean skip waiting for initial content sync
+---@field window? integer if given, open attached buffer in this window
+---@field buffer? integer if given, use provided buffer instead of creating a new one
+---@field skip_exists_check? boolean skip vim.fn.bufexists check, used for recursive call
+---
 ---@param name string name of buffer to attach to
----@param buffer? integer buffer to use for attaching (will clear content)
----@param content? string if provided, set this content after attaching
----@param nowait? boolean skip waiting for initial content sync
-local function attach(name, buffer, content, nowait)
-	if vim.fn.bufexists(name) == 1 then
-		error("buffer '" .. name .. "' already exists!")
+---@param opts AttachOptions options for attaching
+local function attach(name, opts)
+	if not opts.skip_exists_check and vim.fn.bufexists(name) == 1 then
+		vim.ui.select(
+			{ "download content", "upload content" },
+			{ prompt = "buffer is already open" },
+			function (choice)
+				if choice == nil then return end
+				opts.buffer = vim.fn.bufnr(name)
+				opts.skip_exists_check = true
+				if choice == "upload content" then
+					opts.content = utils.buffer.get_content(opts.buffer)
+				end
+				attach(name, opts)
+			end
+		)
+		return
 	end
 
 	if buffer_id_map[name] ~= nil then
-		error("already attached to buffer " .. name)
+		return print(" !! already attached to buffer " .. name)
 	end
 
+	local buffer = opts.buffer
 	if buffer == nil then
 		buffer = vim.api.nvim_get_current_buf()
 	end
@@ -29,12 +48,17 @@ local function attach(name, buffer, content, nowait)
 	vim.api.nvim_buf_set_name(buffer, name)
 	CODEMP.workspace:attach(name):and_then(function (controller)
 		-- TODO disgusting! but poll blocks forever on empty buffers...
-		if not nowait then
+		if not opts.nowait then
 			local promise = controller:poll()
 			for i=1, 20, 1 do
 				if promise.ready then break end
 				vim.uv.sleep(100)
 			end
+		end
+
+		if opts.window ~= nil then
+			vim.api.nvim_win_set_buf(opts.window, buffer)
+			vim.api.nvim_set_current_win(opts.window)
 		end
 
 		-- TODO map name to uuid
@@ -115,10 +139,10 @@ local function attach(name, buffer, content, nowait)
 		end))
 
 		local remote_content = controller:content():await()
-		if content ~= nil then
+		if opts.content ~= nil then
 			-- TODO this may happen too soon!!
 			local _ = controller:send({
-				start = 0, finish = #remote_content, content = content
+				start = 0, finish = #remote_content, content = opts.content
 			}) -- no need to await
 		else
 			local current_content = utils.buffer.get_content(buffer)

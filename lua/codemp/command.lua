@@ -136,7 +136,7 @@ local joined_actions = {
 				buffer = vim.api.nvim_create_buf(true, false)
 				vim.api.nvim_set_current_buf(buffer)
 			end
-			buffers.attach(p, buffer)
+			buffers.attach(p, { buffer = buffer })
 		end
 		if path == nil then
 			local filetree = CODEMP.workspace:filetree(nil, false)
