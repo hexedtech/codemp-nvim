@@ -34,13 +34,13 @@ end
 
 local last_jump = { 0, 0 }
 
----@param ws Workspace
-local function register_cursor_callback(ws)
-	local controller = ws.cursor
+---@param controller CursorController
+---@param name string
+local function register_cursor_callback(controller, name)
 	local once = true
 	vim.api.nvim_create_autocmd({"CursorMoved", "CursorMovedI", "ModeChanged"}, {
-		group = vim.api.nvim_create_augroup("codemp-workspace-" .. ws.name, { clear = true }),
-		callback = function (ev)
+		group = vim.api.nvim_create_augroup("codemp-workspace-" .. name, { clear = true }),
+		callback = function (_ev)
 			if CODEMP.ignore_following_action then
 				CODEMP.ignore_following_action = false
 				return
@@ -72,9 +72,8 @@ local function register_cursor_callback(ws)
 	})
 end
 
----@param ws Workspace
-local function register_cursor_handler(ws)
-	local controller = ws.cursor
+---@param controller CursorController
+local function register_cursor_handler(controller)
 	local async = vim.loop.new_async(vim.schedule_wrap(function ()
 		while true do
 			local event = controller:try_recv():await()
@@ -157,8 +156,8 @@ local function join(workspace)
 	print(" <> joining workspace " .. workspace .. " ...")
 	CODEMP.client:join_workspace(workspace):and_then(function (ws)
 		print(" >< joined workspace " .. ws.name)
-		register_cursor_callback(ws)
-		register_cursor_handler(ws)
+		register_cursor_callback(ws.cursor, ws.name)
+		register_cursor_handler(ws.cursor)
 		CODEMP.workspace = ws
 		for _, user in pairs(CODEMP.workspace:user_list()) do
 			buffers.users[user] = ""
@@ -210,5 +209,4 @@ return {
 	leave = leave,
 	map = user_hl,
 	list = fetch_workspaces_list,
-	setup_colors = setup_colors,
 }
