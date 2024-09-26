@@ -88,8 +88,7 @@ M.move = function(state, path, extra)
 	local selected = state.tree:get_node()
 	if selected.type == "buffer" then
 		return vim.ui.input({ prompt = "move content into open buffer?" }, function (input)
-			if input == nil then return end
-			if not vim.startswith(string.lower(input), "y") then return end
+			if not input or not vim.startswith(string.lower(input), "y") then return end
 			local window = utils.get_appropriate_window(state)
 			local buf = vim.api.nvim_win_get_buf(window)
 			buf_manager.attach(selected.name, buf)
@@ -102,8 +101,7 @@ M.copy = function(state, path, extra)
 	local selected = state.tree:get_node()
 	if selected.type == "buffer" then
 		return vim.ui.input({ prompt = "copy content to remote buffer?" }, function (input)
-			if input == nil then return end
-			if not vim.startswith(string.lower(input), "y") then return end
+			if not input or not vim.startswith(string.lower(input), "y") then return end
 			local window = utils.get_appropriate_window(state)
 			local buf = vim.api.nvim_win_get_buf(window)
 			local content = codemp_utils.buffer.get_content(buf)
@@ -115,17 +113,24 @@ end
 
 M.delete = function(state, path, extra)
 	local selected = state.tree:get_node()
-	if selected.type == "root" and vim.startswith(selected.name, "#") then
+	if selected.type == "title" then
+		vim.ui.input({ prompt = "disconnect from server?" }, function(choice)
+			if not choice or not vim.startswith(string.lower(choice), "y") then return end
+			CODEMP.client = nil
+			collectgarbage("collect") -- to make sure we drop the reference and disconnect
+		end)
+	elseif selected.type == "root" and vim.startswith(selected.name, "#") then
 		vim.ui.input({ prompt = "disconnect from workspace?" }, function (input)
-			if input == nil then return end
-			if not vim.startswith(string.lower(input), "y") then return end
+			if not input or not vim.startswith(string.lower(input), "y") then return end
 			ws_manager.leave()
 		end)
 	elseif selected.type == "buffer" then
 		if CODEMP.workspace == nil then error("join a workspace first") end
 		vim.ui.input({ prompt = "delete buffer '" .. selected.name .. "'?" }, function (input)
-			if input == nil then return end
-			if not vim.startswith(string.lower(input), "y") then return end
+			if not input or not vim.startswith(string.lower(input), "y") then return end
+			if buf_manager.map_rev[selected.name] ~= nil then
+				buf_manager.detach(selected.name)
+			end
 			CODEMP.workspace:delete(selected.name):and_then(function ()
 				print("deleted buffer " .. selected.name)
 				manager.refresh("codemp")
@@ -134,8 +139,7 @@ M.delete = function(state, path, extra)
 	elseif selected.type == "workspace" then
 		if CODEMP.client == nil then error("connect to server first") end
 		vim.ui.input({ prompt = "delete buffer '" .. selected.name .. "'?" }, function (input)
-			if input == nil then return end
-			if not vim.startswith(string.lower(input), "y") then return end
+			if not input or not vim.startswith(string.lower(input), "y") then return end
 			CODEMP.client:delete_workspace(selected.name):and_then(function ()
 				print("deleted workspace " .. selected.name)
 				manager.refresh("codemp")
@@ -173,7 +177,7 @@ M.add = function(state, path, extra)
 	elseif selected.type == "buffer" then
 		if buf_manager.map_rev[selected.name] ~= nil then
 			vim.ui.input({ prompt = "detach from '" .. selected.name .. "'?" }, function (choice)
-				if not vim.startswith(string.lower(choice), "y") then return end
+				if not choice or not vim.startswith(string.lower(choice), "y") then return end
 				buf_manager.detach(selected.name)
 			end)
 		end
