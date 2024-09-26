@@ -165,10 +165,10 @@ local function detach(name)
 	id_buffer_map[buffer] = nil
 	buffer_id_map[name] = nil
 	if not CODEMP.workspace:detach(name) then
-		print(" /!\\ dangling reference, detach incomplete")
-	else
-		print(" -- detached from buffer " .. name)
+		collectgarbage("collect") -- clear dangling references
 	end
+
+	print(" -- detached from buffer " .. name)
 
 	require('codemp.window').update()
 end
