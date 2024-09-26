@@ -38,7 +38,7 @@ end
 local sep = '/'
 if os_uname.sysname == "Windows_NT" then sep = '\\' end
 
-local version = "v0.7.1"
+local version = "v0.7.2"
 
 local native_path = plugin_dir..sep.."lua"..sep.."codemp"..sep.."new-native."..ext
 local replace_native_path = plugin_dir..sep.."lua"..sep.."codemp"..sep.."native."..ext
