@@ -112,7 +112,10 @@ local function attach(name, opts)
 			end,
 		})
 
+		local lock = false
 		local async = vim.loop.new_async(vim.schedule_wrap(function ()
+			if lock then return end
+			lock = true
 			while true do
 				local event = controller:try_recv():await()
 				if event == nil then break end
@@ -132,6 +135,7 @@ local function attach(name, opts)
 					end
 				end
 			end
+			lock = false
 		end))
 
 		local remote_content = controller:content():await()
