@@ -22,9 +22,15 @@ M.refresh = require("neo-tree.utils").wrap(manager.refresh, "codemp")
 M.open = function(state, path, extra)
 	local selected = state.tree:get_node()
 	if selected.type == "spacer" then return end
-	if selected.type == "title" then return end
 	if selected.type == "entry" then return end
 	if selected.type == "root" then return toggle(selected) end
+	if selected.type == "title" then
+		if CODEMP.client ~= nil then
+			print(" :: refreshing workspace list")
+			ws_manager.list()
+		end
+		return
+	end
 	if selected.type == "button" then
 		if selected.name == "[connect]" and CODEMP.client == nil then
 			client_manager.connect()
