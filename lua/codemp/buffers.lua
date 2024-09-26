@@ -19,16 +19,12 @@ local ticks = {}
 ---@param opts AttachOptions options for attaching
 local function attach(name, opts)
 	if not opts.skip_exists_check and vim.fn.bufexists(name) == 1 then
-		vim.ui.select(
-			{ "download content", "upload content" },
-			{ prompt = "buffer is already open" },
+		vim.ui.input(
+			{ prompt = "buffer exists, overwrite?" },
 			function (choice)
-				if choice == nil then return end
+				if not vim.startswith(string.lower(choice), "y") then return end
 				opts.buffer = vim.fn.bufnr(name)
 				opts.skip_exists_check = true
-				if choice == "upload content" then
-					opts.content = utils.buffer.get_content(opts.buffer)
-				end
 				attach(name, opts)
 			end
 		)
@@ -168,9 +164,12 @@ local function detach(name)
 	local buffer = buffer_id_map[name]
 	id_buffer_map[buffer] = nil
 	buffer_id_map[name] = nil
-	CODEMP.workspace:detach(name)
+	if not CODEMP.workspace:detach(name) then
+		print(" /!\\ dangling reference, detach incomplete")
+	else
+		print(" -- detached from buffer " .. name)
+	end
 
-	print(" -- detached from buffer " .. name)
 	require('codemp.window').update()
 end
 
