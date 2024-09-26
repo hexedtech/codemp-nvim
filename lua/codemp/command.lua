@@ -150,13 +150,16 @@ local joined_actions = {
 	end,
 
 	detach = function(path)
-		if path == nil then error("missing buffer name") end
+		if path == nil then
+			local bufid = vim.api.nvim_get_current_buf()
+			path = buffers.map[bufid]
+			if path == nil then	error("missing buffer name") end
+		end
 		buffers.detach(path)
 		require('codemp.window').update() -- TODO would be nice to do automatically inside
 	end,
 
-	leave = function(ws)
-		if ws == nil then error("missing workspace to leave") end
+	leave = function()
 		workspace.leave()
 	end,
 }
@@ -215,9 +218,16 @@ vim.api.nvim_create_user_command(
 				end
 				return filter(lead, suggestions)
 			elseif stage == 3 then
-				if args[#args-1] == 'attach' or args[#args-1] == 'detach' then
+				local last_arg = args[#args-1]
+				if last_arg == 'attach' or last_arg == 'detach' then
 					if CODEMP.client ~= nil and CODEMP.workspace ~= nil then
-						return filter(lead, CODEMP.workspace:filetree())
+						local choices
+						if last_arg == "attach" then
+							choices = CODEMP.workspace:filetree()
+						elseif last_arg == "detach" then
+							choices = CODEMP.workspace.active_buffers
+						end
+						return filter(lead, choices)
 					end
 				elseif args[#args-1] == 'join' then
 					return filter(lead, CODEMP.available, function(ws) return ws.name end)
