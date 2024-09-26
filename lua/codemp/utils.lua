@@ -45,7 +45,6 @@ local function async_poller(generator, callback)
 		callback = callback,
 		timer = vim.uv.new_timer(),
 		stop = function (this)
-			print("stopping async poller")
 			if this.promise ~= nil then
 				-- TODO the :abort() change still hasnt been merged, so check for its presence!
 				if this.promise.abort ~= nil then
@@ -57,10 +56,8 @@ local function async_poller(generator, callback)
 		end
 	}
 	poller.timer:start(500, 500, function()
-		print("ticking poller")
 		if poller.promise == nil then poller.promise = poller.generator() end
 		if poller.promise.ready then
-			print("spawning callback")
 			local res = poller.promise:await()
 			vim.schedule(function() poller.callback(res) end)
 			poller.promise = nil
