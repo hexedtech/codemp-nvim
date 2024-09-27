@@ -8,6 +8,21 @@ local buffer_id_map = {}
 local user_buffer_name = {}
 local ticks = {}
 
+---@param name string
+--TODO this should happen at the level above (Workspace) but accesses tables on this level, badly designed!
+local function detach(name)
+	local buffer = buffer_id_map[name]
+	id_buffer_map[buffer] = nil
+	buffer_id_map[name] = nil
+	if not CODEMP.workspace:detach(name) then
+		collectgarbage("collect") -- clear dangling references
+	end
+
+	print(" -- detached from buffer " .. name)
+
+	require('codemp.window').update()
+end
+
 ---@class AttachOptions
 ---@field content? string if provided, set this as content after attaching
 ---@field nowait? boolean skip waiting for initial content sync
@@ -127,10 +142,24 @@ local function attach(name, opts)
 				utils.buffer.set_content(buffer, event.content, event.start, event.finish)
 				if event.hash ~= nil then
 					if CODEMP.native.hash(utils.buffer.get_content(buffer)) ~= event.hash then
-						-- OUT OF SYNC!
-						-- TODO this may be destructive! we should probably prompt the user before doing this
-						print(" /!\\ out of sync, resynching...")
-						utils.buffer.set_content(buffer, controller:content():await())
+						if CODEMP.config.auto_sync then
+							print(" /!\\ out of sync, resynching...")
+							utils.buffer.set_content(buffer, controller:content():await())
+						else
+							vim.ui.select(
+								{ "sync", "detach" },
+								{ prompt = "out of sync! force resync or detach?" },
+								function (choice)
+									if not choice then return end
+									if choice == "sync" then
+										utils.buffer.set_content(buffer, controller:content():await())
+									end
+									if choice == "detach" then
+										detach(name)
+									end
+								end
+							)
+						end
 						return
 					end
 				end
@@ -160,21 +189,6 @@ local function attach(name, opts)
 		print(" ++ attached to buffer " .. name)
 		require('codemp.window').update()
 	end)
-end
-
----@param name string
---TODO this should happen at the level above (Workspace) but accesses tables on this level, badly designed!
-local function detach(name)
-	local buffer = buffer_id_map[name]
-	id_buffer_map[buffer] = nil
-	buffer_id_map[name] = nil
-	if not CODEMP.workspace:detach(name) then
-		collectgarbage("collect") -- clear dangling references
-	end
-
-	print(" -- detached from buffer " .. name)
-
-	require('codemp.window').update()
 end
 
 ---@param buffer? integer if provided, sync given buffer id, otherwise sync current buf
