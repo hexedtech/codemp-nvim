@@ -82,6 +82,7 @@ local connected_actions = {
 	disconnect = function()
 		print(" xx disconnecting client " .. CODEMP.client.id)
 		CODEMP.client = nil -- should drop and thus close everything
+		collectgarbage("collect") -- make sure we drop
 	end,
 }
 
