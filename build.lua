@@ -51,6 +51,17 @@ if os_uname.sysname == "Windows_NT" then
 	})
 
 	print("downloading in background... library will be installed upon restart")
+
+	vim.api.nvim_create_autocmd(
+		{"ExitPre"},
+		{
+			callback = function (_ev)
+				local handle, pid = vim.uv.spawn("cmd.exe", {
+					args = { "move", "/Y", native_path, replace_native_path }
+				})
+			end
+		}
+	)
 else
 	local res = vim.system({"curl", "-o", native_path, download_url_native }):wait() -- TODO can we run this asynchronously?
 	print(res.stdout)
@@ -63,13 +74,13 @@ else
 		print(res.stdout)
 		print(res.stderr)
 	end
+	vim.api.nvim_create_autocmd(
+		{"ExitPre"},
+		{
+			callback = function (_ev)
+				vim.system({"mv", native_path, replace_native_path}, { detach = true })
+			end
+		}
+	)
 end
 
-vim.api.nvim_create_autocmd(
-	{"ExitPre"},
-	{
-		callback = function (_ev)
-			vim.system({"mv", native_path, replace_native_path}, { detach = true })
-		end
-	}
-)
