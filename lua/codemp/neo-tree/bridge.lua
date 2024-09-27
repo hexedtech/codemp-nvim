@@ -9,7 +9,7 @@ local M = {}
 ---@return NuiTree.Node
 local function new_item(workspace, path)
 	return {
-		id = string.format("codemp://%s/%s", workspace, path),
+		id = string.format("codemp://%s/item/%s", workspace, path),
 		name = path,
 		type = "buffer",
 		extra = {},
@@ -36,7 +36,7 @@ end
 ---@return NuiTree.Node
 local function new_workspace(name, owned, expanded)
 	return {
-		id = "codemp://" .. name,
+		id = "codemp://" .. name .. "/workspace",
 		name = name,
 		type = "workspace",
 		extra = {
