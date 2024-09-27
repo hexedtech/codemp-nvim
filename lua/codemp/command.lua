@@ -104,7 +104,7 @@ local joined_actions = {
 			local buf = vim.api.nvim_get_current_buf()
 			if not bang then buffers.create(path) end
 			local content = utils.buffer.get_content(buf)
-			buffers.attach(path, buf, content)
+			buffers.attach(path, { buffer = buf, content = content })
 			require('codemp.window').update() -- TODO would be nice to do automatically inside
 		else
 			print(" !! empty path or open a file")

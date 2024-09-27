@@ -91,7 +91,7 @@ M.move = function(state, path, extra)
 			if not input or not vim.startswith(string.lower(input), "y") then return end
 			local window = utils.get_appropriate_window(state)
 			local buf = vim.api.nvim_win_get_buf(window)
-			buf_manager.attach(selected.name, buf)
+			buf_manager.attach(selected.name, { buffer = buf })
 		end)
 	end
 	error("only buffers can be moved to current file")
@@ -105,7 +105,7 @@ M.copy = function(state, path, extra)
 			local window = utils.get_appropriate_window(state)
 			local buf = vim.api.nvim_win_get_buf(window)
 			local content = codemp_utils.buffer.get_content(buf)
-			buf_manager.attach(selected.name, buf, content)
+			buf_manager.attach(selected.name, { buffer = buf, content = content })
 		end)
 	end
 	error("current file can only be copied into buffers")
