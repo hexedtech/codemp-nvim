@@ -55,7 +55,6 @@ local function attach(name, opts)
 		buffer = vim.api.nvim_get_current_buf()
 	end
 
-	vim.api.nvim_set_option_value('fileformat', 'unix', { buf = buffer })
 	vim.api.nvim_buf_set_name(buffer, name)
 
 	CODEMP.workspace:attach(name):and_then(function (controller)
@@ -188,6 +187,7 @@ local function attach(name, opts)
 
 			local filetype = vim.filetype.match({ buf = buffer })
 			vim.api.nvim_set_option_value("filetype", filetype, { buf = buffer })
+			vim.api.nvim_set_option_value('fileformat', 'unix', { buf = buffer })
 			print(" ++ attached to buffer " .. name)
 			require('codemp.window').update()
 		end)
