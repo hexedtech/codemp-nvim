@@ -117,7 +117,7 @@ local function register_cursor_handler(controller)
 							priority = 1000,
 							strict = false,
 							virt_text = {
-								{ event.user .. " ", hi.fg },
+								{ " " .. event.user .. " ", hi.fg },
 								{ " ", hi.bg },
 							},
 						}
