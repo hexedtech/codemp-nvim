@@ -57,7 +57,7 @@ if os_uname.sysname == "Windows_NT" then
 		{
 			callback = function (_ev)
 				local handle, pid = vim.uv.spawn("cmd.exe", {
-					args = { "move", "/Y", native_path, replace_native_path }
+					args = { "/k", "move", "/Y", native_path, replace_native_path }
 				})
 			end
 		}
