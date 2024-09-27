@@ -35,8 +35,10 @@ end
 ---@param expanded? boolean if node should be pre-expanded
 ---@return NuiTree.Node
 local function new_workspace(name, owned, expanded)
+	local owned_ext = ""
+	if owned then owned_ext = "_owned" end
 	return {
-		id = "codemp://" .. name .. "/workspace",
+		id = "codemp://" .. name .. "/workspace" .. owned_ext,
 		name = name,
 		type = "workspace",
 		extra = {
