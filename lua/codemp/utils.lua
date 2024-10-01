@@ -46,10 +46,7 @@ local function async_poller(generator, callback)
 		timer = vim.uv.new_timer(),
 		stop = function (this)
 			if this.promise ~= nil then
-				-- TODO the :abort() change still hasnt been merged, so check for its presence!
-				if this.promise.abort ~= nil then
-					this.promise:abort()
-				end
+				this.promise:cancel()
 			end
 			this.timer:stop()
 			this.timer:close()
