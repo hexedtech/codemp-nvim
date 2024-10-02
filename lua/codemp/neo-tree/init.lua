@@ -38,9 +38,8 @@ M.default_config = {
 		buffer = {
 			{ "indent" },
 			{ "icon" },
-			{ "name" },
-			{ "spacer" },
 			{ "users" },
+			{ "name" },
 		},
 		entry = {
 			{ "indent" },
