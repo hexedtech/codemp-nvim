@@ -71,7 +71,11 @@ local function register_cursor_callback(controller, name)
 				end
 				once = false
 			end
+			local oldbuf = buffers.users[CODEMP.client.username]
 			buffers.users[CODEMP.client.username] = bufname
+			if oldbuf ~= bufname then
+				require('codemp.window').update()
+			end
 		end
 	})
 end
