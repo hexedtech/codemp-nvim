@@ -14,6 +14,7 @@ local function detach(name)
 	local buffer = buffer_id_map[name]
 	id_buffer_map[buffer] = nil
 	buffer_id_map[name] = nil
+	CODEMP.workspace:get_buffer(name):clear_callback()
 	if not CODEMP.workspace:detach(name) then
 		collectgarbage("collect") -- clear dangling references
 	end

@@ -33,13 +33,15 @@ local function fetch_workspaces_list()
 end
 
 local last_jump = { 0, 0 }
+local workspace_callback_group = nil
 
 ---@param controller CursorController
 ---@param name string
 local function register_cursor_callback(controller, name)
 	local once = true
+	workspace_callback_group = vim.api.nvim_create_augroup("codemp-workspace-" .. name, { clear = true })
 	vim.api.nvim_create_autocmd({"CursorMoved", "CursorMovedI", "ModeChanged"}, {
-		group = vim.api.nvim_create_augroup("codemp-workspace-" .. name, { clear = true }),
+		group = workspace_callback_group,
 		callback = function (_ev)
 			if CODEMP.ignore_following_action then
 				CODEMP.ignore_following_action = false
@@ -219,13 +221,23 @@ local function join(workspace)
 end
 
 local function leave()
-	local name = CODEMP.workspace.name
+	local ws_name = CODEMP.workspace.name
+	CODEMP.workspace.cursor:clear_callback()
+	vim.api.nvim_clear_autocmds({ group = workspace_callback_group })
+	for id, name in pairs(buffers.map) do
+		CODEMP.workspace:get_buffer(name):clear_callback()
+		buffers.map[id] = nil
+		buffers.map_rev[name] = nil
+	end
+	for user, _buf in pairs(buffers.users) do
+		buffers.users[user] = nil
+	end
 	CODEMP.workspace = nil
 	if events_poller ~= nil then
 		events_poller:stop()
 		events_poller = nil
 	end
-	if not CODEMP.client:leave_workspace(name) then
+	if not CODEMP.client:leave_workspace(ws_name) then
 		collectgarbage("collect")
 		-- TODO codemp disconnects when all references to its objects are dropped. since it
 		-- hands out Arc<> of things, all references still not garbage collected in Lua will
@@ -233,7 +245,7 @@ local function leave()
 		-- only happens when manually requested, and it's not like the extra garbage collection
 		-- is an effort for nothing... still it would be more elegant to not need this!!
 	end
-	print(" -- left workspace " .. name)
+	print(" -- left workspace " .. ws_name)
 	require('codemp.window').update()
 end
 
