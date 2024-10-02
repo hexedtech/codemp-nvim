@@ -104,7 +104,7 @@ M.users = function(config, node, state)
 	for user, buf in pairs(codemp_buffers.users) do
 		if buf == node.name then
 			table.insert(out, {
-				text = " ",
+				text = string.sub(user, 0, 1),
 				highlight = codemp_utils.color(user).bg,
 				align = "end",
 			})
