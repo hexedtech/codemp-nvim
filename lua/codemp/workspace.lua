@@ -51,23 +51,27 @@ local function register_cursor_callback(controller, name)
 			end
 			local cur = utils.cursor.position()
 			local buf = vim.api.nvim_get_current_buf()
+			local bufname
 			if buffers.map[buf] ~= nil then
+				bufname = buffers.map[buf]
 				once = true
 				local _ = controller:send({
-					buffer = buffers.map[buf],
+					buffer = bufname,
 					start = cur[1],
 					finish = cur[2],
 				}) -- no need to await here
 			else -- set ourselves "away" only once
+				bufname = ""
 				if once then
 					local _ = controller:send({
-						buffer = "",
+						buffer = bufname,
 						start = { 0, 0 },
 						finish = { 0, 0 },
 					}) -- no need to await here
 				end
 				once = false
 			end
+			buffers.users[CODEMP.client.username] = bufname
 		end
 	})
 end
