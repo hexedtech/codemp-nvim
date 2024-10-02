@@ -34,12 +34,14 @@ M.default_config = {
 			{ "indent" },
 			{ "icon" },
 			{ "name" },
+			{ "buffer" },
 		},
 		buffer = {
 			{ "indent" },
 			{ "icon" },
-			{ "users" },
 			{ "name" },
+			{ "spacer" },
+			{ "users" },
 		},
 		entry = {
 			{ "indent" },

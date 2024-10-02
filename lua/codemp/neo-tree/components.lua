@@ -84,6 +84,13 @@ M.name = function(config, node, state)
 	}
 end
 
+M.buffer = function(config, node, state)
+	return {
+		text = codemp_buffers.users[node.name],
+		highlight = highlights.FILE_ICON,
+	}
+end
+
 M.spacer = function(config, node, state)
 	return {
 		text = "  ",
@@ -97,15 +104,12 @@ M.users = function(config, node, state)
 	for user, buf in pairs(codemp_buffers.users) do
 		if buf == node.name then
 			table.insert(out, {
-				text = string.sub(user, 0, 1),
+				text = " ",
 				highlight = codemp_utils.color(user).bg,
+				align = "end",
 			})
 		end
 	end
-	table.insert(out, {
-		text = " ",
-		highlight = highlights.NORMAL,
-	})
 	return out
 end
 
