@@ -100,9 +100,10 @@ local function register_cursor_handler(controller)
 				local buffer_id = buffers.map_rev[event.buffer]
 				if buffer_id ~= nil then
 					local hi = user_hl[event.user].hi
+					local event_finish_2 = event.finish[2] -- TODO can't set the tuple field? need to copy out
 					if event.start[1] == event.finish[1] and event.start[2] == event.finish[2] then
 						-- vim can't draw 0-width cursors, so we always expand them to at least 1 width
-						event.finish[2] = event.finish[2] + 1
+						event_finish_2 = event.finish[2] + 1
 					end
 					user_hl[event.user].mark = vim.api.nvim_buf_set_extmark(
 						buffer_id,
@@ -112,7 +113,7 @@ local function register_cursor_handler(controller)
 						{
 							id = user_hl[event.user].mark,
 							end_row = event.finish[1],
-							end_col = event.finish[2],
+							end_col = event_finish_2,
 							hl_group = hi.bg,
 							virt_text_pos = "right_align",
 							sign_text = string.sub(event.user, 0, 1),
