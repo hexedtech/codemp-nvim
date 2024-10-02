@@ -83,7 +83,7 @@ local function attach(name, opts)
 			-- TODO breaks when deleting whole lines at buffer end
 			vim.api.nvim_buf_attach(buffer, false, {
 				on_bytes = function(_, buf, tick, start_row, start_col, start_offset, old_end_row, old_end_col, old_end_byte_len, new_end_row, new_end_col, new_byte_len)
-					if tick <= ticks[buf] then return end
+					if tick == ticks[buf] then return end
 					if id_buffer_map[buf] == nil then return true end -- unregister callback handler
 					if CODEMP.config.debug then print(string.format(
 						"start(row:%s, col:%s) offset:%s end(row:%s, col:%s new(row:%s, col:%s)) len(old:%s, new:%s)",
