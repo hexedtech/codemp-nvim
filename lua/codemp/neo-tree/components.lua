@@ -106,7 +106,6 @@ M.users = function(config, node, state)
 			table.insert(out, {
 				text = string.sub(user, 0, 1),
 				highlight = codemp_utils.color(user).bg,
-				align = "end",
 			})
 		end
 	end
