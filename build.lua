@@ -15,8 +15,10 @@ local os_uname = vim.loop.os_uname()
 
 local arch = os_uname.machine
 
+if arch == "arm64" then arch = "aarch64" end
+
 local platform = string.lower(os_uname.sysname)
-if platform == "mac" then
+if platform == "darwin" then
 	platform = "darwin"
 elseif platform == "windows_nt" then
 	platform = "windows-msvc"
