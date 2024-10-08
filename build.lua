@@ -26,7 +26,7 @@ end
 
 local ext = os_uname.sysname
 if os_uname.sysname == "Windows_NT" then ext = "dll"
-elseif os_uname.sysname == "Mac" then ext = "dylib"
+elseif os_uname.sysname == "Darwin" then ext = "dylib"
 else ext = "so"
 end
 
