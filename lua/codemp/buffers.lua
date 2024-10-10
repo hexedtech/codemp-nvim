@@ -139,9 +139,9 @@ local function attach(name, opts)
 					ticks[buffer] = vim.api.nvim_buf_get_changedtick(buffer)
 					CODEMP.ignore_following_action = true
 					if CODEMP.config.debug then
-						print(" ~~ applying change ~~ " .. event.start .. ".." .. event.finish .. "::[" .. event.content .. "]")
+						print(" ~~ applying change ~~ " .. event.change.start .. ".." .. event.change.finish .. "::[" .. event.change.content .. "]")
 					end
-					utils.buffer.set_content(buffer, event.content, event.start, event.finish)
+					utils.buffer.set_content(buffer, event.change.content, event.change.start, event.change.finish)
 					if event.hash ~= nil then
 						if CODEMP.native.hash(utils.buffer.get_content(buffer)) ~= event.hash then
 							if CODEMP.config.auto_sync then

@@ -59,16 +59,20 @@ local function register_cursor_callback(controller, name)
 				once = true
 				local _ = controller:send({
 					buffer = bufname,
-					start = cur[1],
-					finish = cur[2],
+					start_row = cur[1][1],
+					start_col = cur[1][2],
+					end_row = cur[2][1],
+					end_col = cur[2][2],
 				}) -- no need to await here
 			else -- set ourselves "away" only once
 				bufname = ""
 				if once then
 					local _ = controller:send({
 						buffer = bufname,
-						start = { 0, 0 },
-						finish = { 0, 0 },
+						start_row = 0,
+						start_col = 0,
+						end_row = 1,
+						end_col = 0,
 					}) -- no need to await here
 				end
 				once = false
@@ -98,7 +102,7 @@ local function register_cursor_handler(controller)
 						pos = { 0, 0 },
 					}
 				end
-				user_hl[user].pos = event.start
+				user_hl[user].pos = { event.sel.start_row, event.sel.start_col }
 				local old_buffer = buffers.users[event.user]
 				if old_buffer ~= nil then
 					local old_buffer_id = buffers.map_rev[old_buffer]
@@ -106,23 +110,23 @@ local function register_cursor_handler(controller)
 						vim.api.nvim_buf_clear_namespace(old_buffer_id, user_hl[event.user].ns, 0, -1)
 					end
 				end
-				buffers.users[event.user] = event.buffer
-				local buffer_id = buffers.map_rev[event.buffer]
+				buffers.users[event.user] = event.sel.buffer
+				local buffer_id = buffers.map_rev[event.sel.buffer]
 				if buffer_id ~= nil then
 					local hi = user_hl[event.user].hi
-					local event_finish_2 = event.finish[2] -- TODO can't set the tuple field? need to copy out
-					if event.start[1] == event.finish[1] and event.start[2] == event.finish[2] then
+					local event_finish_2 = event.sel.end_col -- TODO can't set the tuple field? need to copy out
+					if event.sel.start_row == event.sel.end_row and event.sel.start_col == event.sel.end_col then
 						-- vim can't draw 0-width cursors, so we always expand them to at least 1 width
-						event_finish_2 = event.finish[2] + 1
+						event_finish_2 = event.sel.end_col + 1
 					end
 					user_hl[event.user].mark = vim.api.nvim_buf_set_extmark(
 						buffer_id,
 						user_hl[event.user].ns,
-						event.start[1],
-						event.start[2],
+						event.sel.start_row,
+						event.sel.start_col,
 						{
 							id = user_hl[event.user].mark,
-							end_row = event.finish[1],
+							end_row = event.sel.end_row,
 							end_col = event_finish_2,
 							hl_group = hi.bg,
 							virt_text_pos = "right_align",
@@ -138,11 +142,11 @@ local function register_cursor_handler(controller)
 						}
 					)
 				end
-				if old_buffer ~= event.buffer then
+				if old_buffer ~= event.sel.buffer then
 					require('codemp.window').update() -- redraw user positions
 				end
 				if CODEMP.following ~= nil and CODEMP.following == event.user then
-					local buf_id = buffers.map_rev[event.buffer]
+					local buf_id = buffers.map_rev[event.sel.buffer]
 					if buf_id ~= nil then
 						local win = vim.api.nvim_get_current_win()
 						local curr_buf = vim.api.nvim_get_current_buf()
@@ -151,12 +155,12 @@ local function register_cursor_handler(controller)
 							vim.api.nvim_win_set_buf(win, buf_id)
 						end
 						-- keep centered the cursor end that is currently being moved, but prefer start
-						if event.start[1] == last_jump[1] and event.start[2] == last_jump[2] then
-							vim.api.nvim_win_set_cursor(win, { event.finish[1] + 1, event.finish[2] })
+						if event.sel.start_row == last_jump[1] and event.sel.start_col == last_jump[2] then
+							vim.api.nvim_win_set_cursor(win, { event.sel.end_row + 1, event.sel.end_col })
 						else
-							vim.api.nvim_win_set_cursor(win, { event.start[1] + 1, event.start[2] })
+							vim.api.nvim_win_set_cursor(win, { event.sel.start_row + 1, event.sel.start_col })
 						end
-						last_jump = event.start
+						last_jump = { event.sel.start_row, event.sel.start_col }
 					end
 				end
 			end
@@ -192,7 +196,7 @@ local function join(workspace)
 				if CODEMP.client == nil then return nil end
 				local wspace = CODEMP.client:get_workspace(ws_name)
 				if wspace == nil then return nil end
-				return wspace:event()
+				return wspace:recv()
 			end,
 			function(event)
 				if event.type == "leave" then
