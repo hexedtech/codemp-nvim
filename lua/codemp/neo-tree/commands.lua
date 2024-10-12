@@ -118,6 +118,7 @@ M.delete = function(state, path, extra)
 			if not choice or not vim.startswith(string.lower(choice), "y") then return end
 			if CODEMP.workspace ~= nil then ws_manager.leave() end
 			CODEMP.client = nil
+			manager.refresh("codemp")
 			collectgarbage("collect") -- to make sure we drop the reference and disconnect
 		end)
 	elseif selected.type == "root" and vim.startswith(selected.name, "#") then

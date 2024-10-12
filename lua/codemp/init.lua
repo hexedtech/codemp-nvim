@@ -46,6 +46,7 @@ if CODEMP == nil then
 							CODEMP.client = nil -- drop reference so it gets garbage collected
 						end
 						CODEMP.rt:stop()
+						require('codemp.window').update()
 					end
 				}
 			)

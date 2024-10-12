@@ -87,6 +87,7 @@ local connected_actions = {
 		print(" xx disconnecting client " .. CODEMP.client.id)
 		CODEMP.client = nil -- should drop and thus close everything
 		collectgarbage("collect") -- make sure we drop
+		require('codemp.window').update()
 	end,
 }
 
