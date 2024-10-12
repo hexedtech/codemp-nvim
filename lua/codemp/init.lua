@@ -37,6 +37,10 @@ if CODEMP == nil then
 				{"ExitPre"},
 				{
 					callback = function (_ev)
+						if CODEMP.workspace ~= nil then
+							print(" xx leaving workspace " .. CODEMP.workspace.name)
+							require('codemp.workspace').leave()
+						end
 						if CODEMP.client ~= nil then
 							print(" xx disconnecting codemp client")
 							CODEMP.client = nil -- drop reference so it gets garbage collected

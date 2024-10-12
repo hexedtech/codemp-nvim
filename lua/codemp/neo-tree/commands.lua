@@ -116,6 +116,7 @@ M.delete = function(state, path, extra)
 	if selected.type == "title" then
 		vim.ui.input({ prompt = "disconnect from server?" }, function(choice)
 			if not choice or not vim.startswith(string.lower(choice), "y") then return end
+			if CODEMP.workspace ~= nil then ws_manager.leave() end
 			CODEMP.client = nil
 			collectgarbage("collect") -- to make sure we drop the reference and disconnect
 		end)

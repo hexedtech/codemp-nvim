@@ -80,6 +80,10 @@ local connected_actions = {
 	end,
 
 	disconnect = function()
+		if CODEMP.workspace ~= nil then
+			print(" xx leaving workspace " .. CODEMP.workspace.name)
+			workspace.leave()
+		end
 		print(" xx disconnecting client " .. CODEMP.client.id)
 		CODEMP.client = nil -- should drop and thus close everything
 		collectgarbage("collect") -- make sure we drop
