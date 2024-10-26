@@ -63,17 +63,17 @@ local function register_cursor_callback(controller, name)
 					start_col = cur[1][2],
 					end_row = cur[2][1],
 					end_col = cur[2][2],
-				}) -- no need to await here
+				})
 			else -- set ourselves "away" only once
 				bufname = ""
 				if once then
-					local _ = controller:send({
+					controller:send({
 						buffer = bufname,
 						start_row = 0,
 						start_col = 0,
 						end_row = 1,
 						end_col = 0,
-					}) -- no need to await here
+					})
 				end
 				once = false
 			end

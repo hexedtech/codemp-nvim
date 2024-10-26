@@ -125,7 +125,7 @@ local function attach(name, opts)
 					end
 					controller:send({
 						start_idx = start_offset, end_idx = end_offset, content = change_content
-					}):await()
+					})
 				end,
 			})
 
@@ -177,7 +177,7 @@ local function attach(name, opts)
 				-- TODO this may happen too soon!!
 				local _ = controller:send({
 					start_idx = 0, end_idx = #remote_content, content = opts.content
-				}) -- no need to await
+				})
 			else
 				local current_content = utils.buffer.get_content(buffer)
 				if current_content ~= remote_content then
