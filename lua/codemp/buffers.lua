@@ -15,7 +15,7 @@ local function detach(name)
 	id_buffer_map[buffer] = nil
 	buffer_id_map[name] = nil
 	CODEMP.workspace:get_buffer(name):clear_callback()
-	if not CODEMP.workspace:detach(name) then
+	if not CODEMP.workspace:detach_buffer(name) then
 		collectgarbage("collect") -- clear dangling references
 	end
 
@@ -58,7 +58,7 @@ local function attach(name, opts)
 
 	vim.api.nvim_buf_set_name(buffer, name)
 
-	CODEMP.workspace:attach(name):and_then(function (controller)
+	CODEMP.workspace:attach_buffer(name):and_then(function (controller)
 		vim.schedule(function()
 			-- TODO disgusting! but poll blocks forever on empty buffers...
 			if not opts.nowait then
@@ -124,7 +124,7 @@ local function attach(name, opts)
 						print(string.format("sending: %s..%s '%s'", start_offset, start_offset + old_end_byte_len, change_content))
 					end
 					controller:send({
-						start = start_offset, finish = end_offset, content = change_content
+						start_idx = start_offset, end_idx = end_offset, content = change_content
 					}):await()
 				end,
 			})
@@ -139,9 +139,9 @@ local function attach(name, opts)
 					ticks[buffer] = vim.api.nvim_buf_get_changedtick(buffer)
 					CODEMP.ignore_following_action = true
 					if CODEMP.config.debug then
-						print(" ~~ applying change ~~ " .. event.change.start .. ".." .. event.change.finish .. "::[" .. event.change.content .. "]")
+						print(" ~~ applying change ~~ " .. event.change.start_idx .. ".." .. event.change.end_idx .. "::[" .. event.change.content .. "]")
 					end
-					utils.buffer.set_content(buffer, event.change.content, event.change.start, event.change.finish)
+					utils.buffer.set_content(buffer, event.change.content, event.change.start_idx, event.change.end_idx)
 					if event.hash ~= nil then
 						if CODEMP.native.hash(utils.buffer.get_content(buffer)) ~= event.hash then
 							if CODEMP.config.auto_sync then
@@ -173,7 +173,7 @@ local function attach(name, opts)
 			if opts.content ~= nil then
 				-- TODO this may happen too soon!!
 				local _ = controller:send({
-					start = 0, finish = #remote_content, content = opts.content
+					start_idx = 0, end_idx = #remote_content, content = opts.content
 				}) -- no need to await
 			else
 				local current_content = utils.buffer.get_content(buffer)
@@ -227,7 +227,7 @@ local function create(buffer)
 	if CODEMP.workspace == nil then
 		error("join a workspace first")
 	end
-	CODEMP.workspace:create(buffer):and_then(function ()
+	CODEMP.workspace:create_buffer(buffer):and_then(function ()
 		print(" ++  created buffer " .. buffer)
 		require('codemp.window').update()
 	end)

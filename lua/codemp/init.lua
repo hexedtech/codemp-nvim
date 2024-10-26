@@ -38,7 +38,7 @@ if CODEMP == nil then
 				{
 					callback = function (_ev)
 						if CODEMP.workspace ~= nil then
-							print(" xx leaving workspace " .. CODEMP.workspace.name)
+							print(" xx leaving workspace " .. CODEMP.workspace:id())
 							require('codemp.workspace').leave()
 						end
 						if CODEMP.client ~= nil then

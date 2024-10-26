@@ -225,7 +225,7 @@ return {
 		get_content = buffer_get_content,
 		set_content = buffer_set_content,
 	},
-	available_colors = available_colors,
+	available_colors = colors,
 	color = color,
 	poller = async_poller,
 	sep = separator,

@@ -38,7 +38,7 @@ M.open = function(state, path, extra)
 		return
 	end
 	if selected.type == "workspace" then
-		if CODEMP.workspace ~= nil and CODEMP.workspace.name ~= selected.name then
+		if CODEMP.workspace ~= nil and CODEMP.workspace:id() ~= selected.name then
 			error("must leave current workspace first")
 		end
 		if CODEMP.workspace == nil then
@@ -62,10 +62,12 @@ M.open = function(state, path, extra)
 		local usr = ws_manager.map[selected.name]
 		print(" /\\/ following " .. selected.name)
 		CODEMP.following = selected.name
-		local _ = CODEMP.workspace.cursor:send({
+		local _ = CODEMP.workspace:cursor():send({
 			buffer = "",
-			start = { 0, 0 },
-			finish = { 0, 0 },
+			start_row = 0,
+			start_col = 0,
+			end_row = 0,
+			end_col = 0,
 		}) -- clear current cursor
 		if usr ~= nil then
 			local buf_name = buf_manager.users[selected.name]
@@ -133,7 +135,7 @@ M.delete = function(state, path, extra)
 			if buf_manager.map_rev[selected.name] ~= nil then
 				buf_manager.detach(selected.name)
 			end
-			CODEMP.workspace:delete(selected.name):and_then(function ()
+			CODEMP.workspace:delete_buffer(selected.name):and_then(function ()
 				print("deleted buffer " .. selected.name)
 				manager.refresh("codemp")
 			end)
@@ -156,7 +158,7 @@ M.add = function(state, path, extra)
 		if vim.startswith(selected.name, "#") then
 			vim.ui.input({ prompt = "new buffer path" }, function(input)
 				if input == nil or input == "" then return end
-				CODEMP.workspace:create(input):and_then(function ()
+				CODEMP.workspace:create_buffer(input):and_then(function ()
 					manager.refresh("codemp")
 				end)
 			end)

@@ -40,10 +40,10 @@ local function update_window()
 	local buffer_to_row = {}
 	local user_to_row = {}
 	local off = {}
-	local tree = CODEMP.workspace:filetree()
+	local tree = CODEMP.workspace:search_buffers()
 	vim.api.nvim_set_option_value('modifiable', true, { buf = buffer_id })
 	local tmp =  ">| codemp\n"
-	tmp = tmp .. " |: " .. CODEMP.workspace.name .. "\n"
+	tmp = tmp .. " |: " .. CODEMP.workspace:id() .. "\n"
 	tmp = tmp .. " |\n"
 	local base_row = 3
 	for n, path in pairs(tree) do

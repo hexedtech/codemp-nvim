@@ -8,6 +8,8 @@
 -- `native.(so|dll|dylib)` file in this plugin folder, next to
 -- the `loader.lua` file.
 
+local version = "v0.8.0"
+
 
 local plugin_dir = vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":p:h") -- got this from https://lazy.folke.io/developers#building
 
@@ -42,8 +44,6 @@ if os_uname.sysname == "Windows_NT" then sep = '\\' end
 
 local new_ext = ext
 if os_uname.sysname == "Darwin" then new_ext = "so" end
-
-local version = "v0.7.3"
 
 local native_path = plugin_dir..sep.."lua"..sep.."codemp"..sep.."new-native."..new_ext
 local replace_native_path = plugin_dir..sep.."lua"..sep.."codemp"..sep.."native."..new_ext

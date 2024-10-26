@@ -12,14 +12,14 @@ local user_hl = {}
 
 local function fetch_workspaces_list()
 	local new_list = {}
-	CODEMP.client:list_workspaces(true, false):and_then(function (owned)
+	CODEMP.client:fetch_owned_workspaces():and_then(function (owned)
 		for _, ws in pairs(owned) do
 			table.insert(new_list, {
 				name = ws,
 				owned = true,
 			})
 		end
-		CODEMP.client:list_workspaces(false, true):and_then(function (invited)
+		CODEMP.client:fetch_joined_workspaces():and_then(function (invited)
 			for _, ws in pairs(invited) do
 				table.insert(new_list, {
 					name = ws,
@@ -77,8 +77,8 @@ local function register_cursor_callback(controller, name)
 				end
 				once = false
 			end
-			local oldbuf = buffers.users[CODEMP.client.username]
-			buffers.users[CODEMP.client.username] = bufname
+			local oldbuf = buffers.users[CODEMP.client:current_user().name]
+			buffers.users[CODEMP.client:current_user().name] = bufname
 			if oldbuf ~= bufname then
 				require('codemp.window').update()
 			end
@@ -175,22 +175,22 @@ local events_poller = nil
 ---join a workspace and register event handlers
 local function join(workspace)
 	print(" <> joining workspace " .. workspace .. " ...")
-	CODEMP.client:join_workspace(workspace):and_then(function (ws)
-		print(" >< joined workspace " .. ws.name)
-		register_cursor_callback(ws.cursor, ws.name)
-		register_cursor_handler(ws.cursor)
+	CODEMP.client:attach_workspace(workspace):and_then(function (ws)
+		print(" >< joined workspace " .. ws:id())
+		register_cursor_callback(ws:cursor(), ws:id())
+		register_cursor_handler(ws:cursor())
 		CODEMP.workspace = ws
 		for _, user in pairs(CODEMP.workspace:user_list()) do
 			buffers.users[user] = ""
 			user_hl[user] = {
 				ns = vim.api.nvim_create_namespace("codemp-cursor-" .. user),
-				hi = utils.color(user),
+				hi = utils.color(user.name),
 				pos = { 0, 0 },
 				mark = nil,
 			}
 		end
 		require('codemp.window').update()
-		local ws_name = ws.name
+		local ws_name = ws:id()
 		events_poller = utils.poller(
 			function()
 				if CODEMP.client == nil then return nil end
@@ -225,8 +225,8 @@ local function join(workspace)
 end
 
 local function leave()
-	local ws_name = CODEMP.workspace.name
-	CODEMP.workspace.cursor:clear_callback()
+	local ws_name = CODEMP.workspace:id()
+	CODEMP.workspace:cursor():clear_callback()
 	vim.api.nvim_clear_autocmds({ group = workspace_callback_group })
 	for id, name in pairs(buffers.map) do
 		CODEMP.workspace:get_buffer(name):clear_callback()

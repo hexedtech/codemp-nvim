@@ -130,16 +130,16 @@ M.update_state = function(state)
 	state.default_expanded_nodes = {}
 
 	if CODEMP.workspace ~= nil then
-		local ws_section = new_root("#" .. CODEMP.workspace.name)
+		local ws_section = new_root("#" .. CODEMP.workspace:id())
 		table.insert(state.default_expanded_nodes, ws_section.id)
-		for i, path in ipairs(CODEMP.workspace:filetree()) do
-			table.insert(ws_section.children, new_item(CODEMP.workspace.name, path))
+		for i, path in ipairs(CODEMP.workspace:search_buffers()) do
+			table.insert(ws_section.children, new_item(CODEMP.workspace:id(), path))
 		end
 
 		local usr_section = new_root("users")
 		table.insert(state.default_expanded_nodes, usr_section.id)
 		for user, buffer in pairs(buf_manager.users) do
-			table.insert(usr_section.children, new_user(CODEMP.workspace.name, user))
+			table.insert(usr_section.children, new_user(CODEMP.workspace:id(), user))
 		end
 		table.insert(ws_section.children, spacer())
 		table.insert(ws_section.children, usr_section)
@@ -159,8 +159,8 @@ M.update_state = function(state)
 
 		local status_section = new_root("client")
 		table.insert(state.default_expanded_nodes, status_section.id)
-		table.insert(status_section.children, new_entry("id", CODEMP.client.id))
-		table.insert(status_section.children, new_entry("name", CODEMP.client.username))
+		table.insert(status_section.children, new_entry("id", CODEMP.client:current_user().id))
+		table.insert(status_section.children, new_entry("name", CODEMP.client:current_user().name))
 
 		table.insert(root, spacer())
 		table.insert(root, status_section)
