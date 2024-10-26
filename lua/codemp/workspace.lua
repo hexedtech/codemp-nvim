@@ -181,7 +181,7 @@ local function join(workspace)
 		register_cursor_handler(ws:cursor())
 		CODEMP.workspace = ws
 		for _, user in pairs(CODEMP.workspace:user_list()) do
-			buffers.users[user] = ""
+			buffers.users[user.name] = ""
 			user_hl[user] = {
 				ns = vim.api.nvim_create_namespace("codemp-cursor-" .. user.name),
 				hi = utils.color(user.name),
@@ -190,15 +190,10 @@ local function join(workspace)
 			}
 		end
 		require('codemp.window').update()
-		local ws_name = ws:id()
-		events_poller = utils.poller(
-			function()
-				if CODEMP.client == nil then return nil end
-				local wspace = CODEMP.client:get_workspace(ws_name)
-				if wspace == nil then return nil end
-				return wspace:recv()
-			end,
-			function(event)
+		local async = vim.uv.new_async(function ()
+			while true do
+				local event = ws:try_recv():await()
+				if event == nil then break end
 				if event.type == "leave" then
 					if buffers.users[event.value] ~= nil then
 						local buf_name = buffers.users[event.value]
@@ -218,9 +213,10 @@ local function join(workspace)
 						mark = nil,
 					}
 				end
-				require('codemp.window').update()
 			end
-		)
+			require('codemp.window').update()
+		end)
+		ws:callback(function(_) async:send() end)
 	end)
 end
 
