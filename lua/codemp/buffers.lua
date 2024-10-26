@@ -142,6 +142,9 @@ local function attach(name, opts)
 						print(" ~~ applying change ~~ " .. event.change.start_idx .. ".." .. event.change.end_idx .. "::[" .. event.change.content .. "]")
 					end
 					utils.buffer.set_content(buffer, event.change.content, event.change.start_idx, event.change.end_idx)
+					controller:ack(event.version)
+
+					-- error detection
 					if event.hash ~= nil then
 						if CODEMP.native.hash(utils.buffer.get_content(buffer)) ~= event.hash then
 							if CODEMP.config.auto_sync then
