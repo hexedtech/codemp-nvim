@@ -136,6 +136,30 @@ local function attach(name, opts)
 				while true do
 					local event = controller:try_recv():await()
 					if event == nil then break end
+
+					-- error detection
+					if event.hash ~= nil and CODEMP.native.hash(utils.buffer.get_content(buffer)) ~= event.hash then
+						if CODEMP.config.auto_sync then
+							print(" /!\\ out of sync, resynching...")
+							utils.buffer.set_content(buffer, controller:content():await())
+						else
+							vim.ui.select(
+								{ "sync", "detach" },
+								{ prompt = "out of sync! force resync or detach?" },
+								function (choice)
+									if choice == "sync" then
+										utils.buffer.set_content(buffer, controller:content():await())
+									end
+									if choice == "detach" then
+										detach(name)
+									end
+								end
+							)
+						end
+
+						break
+					end
+
 					ticks[buffer] = vim.api.nvim_buf_get_changedtick(buffer)
 					CODEMP.ignore_following_action = true
 					if CODEMP.config.debug then
@@ -143,32 +167,6 @@ local function attach(name, opts)
 					end
 					utils.buffer.set_content(buffer, event.change.content, event.change.start_idx, event.change.end_idx)
 					controller:ack(event.version)
-
-					-- error detection
-					if event.hash ~= nil then
-						if CODEMP.native.hash(utils.buffer.get_content(buffer)) ~= event.hash then
-							if CODEMP.config.auto_sync then
-								print(" /!\\ out of sync, resynching...")
-								utils.buffer.set_content(buffer, controller:content():await())
-							else
-								vim.ui.select(
-									{ "sync", "detach" },
-									{ prompt = "out of sync! force resync or detach?" },
-									function (choice)
-										if not choice then return end
-										if choice == "sync" then
-											utils.buffer.set_content(buffer, controller:content():await())
-										end
-										if choice == "detach" then
-											detach(name)
-										end
-									end
-								)
-							end
-
-							break
-						end
-					end
 				end
 				lock = false
 			end))
