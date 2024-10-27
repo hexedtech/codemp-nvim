@@ -176,7 +176,7 @@ local function attach(name, opts)
 			local remote_content = controller:content():await()
 			if opts.content ~= nil then
 				-- TODO this may happen too soon!!
-				local _ = controller:send({
+				controller:send({
 					start_idx = 0, end_idx = #remote_content, content = opts.content
 				})
 			else
