@@ -182,7 +182,7 @@ local function join(workspace)
 		CODEMP.workspace = ws
 		for _, user in pairs(CODEMP.workspace:user_list()) do
 			buffers.users[user.name] = ""
-			user_hl[user] = {
+			user_hl[user.name] = {
 				ns = vim.api.nvim_create_namespace("codemp-cursor-" .. user.name),
 				hi = utils.color(user.name),
 				pos = { 0, 0 },
