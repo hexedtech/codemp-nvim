@@ -165,7 +165,8 @@ local function attach(name, opts)
 									end
 								)
 							end
-							return
+
+							break
 						end
 					end
 				end
