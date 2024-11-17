@@ -29,6 +29,41 @@ local function color(name)
 	}
 end
 
+---convert a global byte offset (0-indexed) to a (row, column) tuple (0-indexed)
+---@param offset integer global index in buffer (first byte is #0)
+---@param buf? integer buffer number, defaults to current
+---@return integer? row, integer? col
+local function byte2rowcol(offset, buf)
+	if buf == nil then
+		buf = vim.api.nvim_get_current_buf()
+	end
+	local row
+	vim.api.nvim_buf_call(buf, function ()
+		row = vim.fn.byte2line(offset + 1)
+	end)
+	if row == -1 then
+		return nil, nil
+	else
+		row = row - 1 -- go back to 0-indexing
+	end
+	local off = vim.api.nvim_buf_get_offset(buf, row)
+	return row, offset - off
+end
+
+---convert a (row, column) tuple (0-indexed) to a global byte offset (0-indexed)
+---@param row integer row number (first row is #0)
+---@param col integer col number (first col is #0)
+---@param buf? integer buffer number, defaults to current
+---@return integer? offset
+local function rowcol2byte(row, col, buf)
+	if buf == nil then
+		buf = vim.api.nvim_get_current_buf()
+	end
+	local off = vim.api.nvim_buf_get_offset(buf, row)
+	if off == -1 then return nil end
+	return off + col
+end
+
 ---@param first integer
 ---@param last integer
 ---@return integer, integer, integer, integer
@@ -195,4 +230,6 @@ return {
 	color = color,
 	sep = separator,
 	setup_colors = setup_colors,
+	rowcol2byte = rowcol2byte,
+	byte2rowcol = byte2rowcol,
 }
