@@ -8,7 +8,7 @@
 -- `native.(so|dll|dylib)` file in this plugin folder, next to
 -- the `loader.lua` file.
 
-local version = "v0.8.0"
+local version = "v0.8.2"
 
 
 local plugin_dir = vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":p:h") -- got this from https://lazy.folke.io/developers#building
