@@ -143,6 +143,7 @@ local function attach(name, opts)
 					if event.hash ~= nil and CODEMP.native.hash(utils.buffer.get_content(buffer)) ~= event.hash then
 						if CODEMP.config.auto_sync then
 							print(" /!\\ out of sync, resynching...")
+							ticks[buffer] = vim.api.nvim_buf_get_changedtick(buffer)
 							utils.buffer.set_content(buffer, controller:content():await())
 						else
 							vim.ui.select(
@@ -150,6 +151,7 @@ local function attach(name, opts)
 								{ prompt = "out of sync! force resync or detach?" },
 								function (choice)
 									if choice == "sync" then
+										ticks[buffer] = vim.api.nvim_buf_get_changedtick(buffer)
 										utils.buffer.set_content(buffer, controller:content():await())
 									end
 									if choice == "detach" then
