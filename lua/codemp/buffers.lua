@@ -140,7 +140,10 @@ local function attach(name, opts)
 					if event == nil then break end
 
 					-- error detection
-					if event.hash ~= nil and CODEMP.native.hash(utils.buffer.get_content(buffer)) ~= event.hash then
+					-- TODO Option::None gets serialized as userdata : NULL, so nil check doesnt work...
+					--      next version field will be skipped if hash is None
+					--if event.hash ~= nil and CODEMP.native.hash(utils.buffer.get_content(buffer)) ~= event.hash then
+					if type(event.hash) ~= "userdata" and CODEMP.native.hash(utils.buffer.get_content(buffer)) ~= event.hash then
 						if CODEMP.config.auto_sync then
 							print(" /!\\ out of sync, resynching...")
 							ticks[buffer] = vim.api.nvim_buf_get_changedtick(buffer)
