@@ -107,7 +107,9 @@ local joined_actions = {
 		end
 		if #path > 0 then
 			local buf = vim.api.nvim_get_current_buf()
-			if not bang then buffers.create(path) end
+			if not bang then
+				CODEMP.workspace:create_buffer(path):await()
+			end
 			local content = utils.buffer.get_content(buf)
 			buffers.attach(path, { buffer = buf, content = content, skip_exists_check = true })
 			require('codemp.window').update() -- TODO would be nice to do automatically inside
