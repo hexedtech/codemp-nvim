@@ -71,6 +71,42 @@ local function cursor_position()
 	end
 end
 
+---@param event Cursor
+---@param buf integer
+---@param ns integer
+---@param mark integer
+---@param hi HighlightPair
+---@return integer extmark id
+local function cursor_draw(event, buf, ns, mark, hi)
+	local event_finish_2 = event.sel.end_col -- TODO can't set the tuple field? need to copy out
+	if event.sel.start_row == event.sel.end_row and event.sel.start_col == event.sel.end_col then
+		-- vim can't draw 0-width cursors, so we always expand them to at least 1 width
+		event_finish_2 = event.sel.end_col + 1
+	end
+	return vim.api.nvim_buf_set_extmark(
+		buf,
+		ns,
+		event.sel.start_row,
+		event.sel.start_col,
+		{
+			id = mark,
+			end_row = event.sel.end_row,
+			end_col = event_finish_2,
+			hl_group = hi.bg,
+			virt_text_pos = "right_align",
+			sign_text = string.sub(event.user, 0, 1),
+			sign_hl_group = hi.bg,
+			virt_text_repeat_linebreak = true,
+			priority = 1000,
+			strict = false,
+			virt_text = {
+				{ " " .. event.user .. " ", hi.fg },
+				{ " ", hi.bg },
+			},
+		}
+	)
+end
+
 
 
 --
@@ -194,6 +230,7 @@ end
 return {
 	cursor = {
 		position = cursor_position,
+		draw = cursor_draw,
 	},
 	buffer = {
 		len = buffer_len,

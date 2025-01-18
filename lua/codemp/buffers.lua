@@ -6,6 +6,8 @@ local id_buffer_map = {}
 local buffer_id_map = {}
 ---@type table<string, string>
 local user_buffer_name = {}
+---@type table<string, Cursor>
+local user_cursors = {}
 local ticks = {}
 
 ---@param name string
@@ -200,6 +202,13 @@ local function attach(name, opts)
 			vim.api.nvim_set_option_value('fileformat', 'unix', { buf = buffer })
 			print(" ++ attached to buffer " .. name)
 			require('codemp.window').update()
+
+			for user, cursor in pairs(user_cursors) do
+				if cursor.sel.buffer == name then
+					local user_hl = require('codemp.workspace').map[user]
+					require('codemp.workspace').map[user].mark = utils.cursor.draw(cursor, buffer, user_hl.ns, user_hl.mark, user_hl.hi)
+				end
+			end
 		end)
 	end)
 end
@@ -251,4 +260,5 @@ return {
 	map_rev = buffer_id_map,
 	ticks = ticks,
 	users = user_buffer_name,
+	cursors = user_cursors,
 }
