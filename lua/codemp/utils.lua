@@ -90,6 +90,17 @@ local function cursor_position()
 	end
 end
 
+---return lenght for given buffer
+---@param unit string either 'bytes' for byte count or 'chars' for characters count, default to 'chars'
+---@return integer
+local function buffer_len(buf, unit)
+	local count = -1
+	if unit == nil then unit = 'chars' end
+	vim.api.nvim_buf_call(buf, function()
+		count = vim.fn.wordcount()[unit]
+	end)
+	return count
+end
 ---@param buf integer?
 ---@return string
 local function buffer_get_content(buf)
@@ -138,12 +149,6 @@ local function buffer_set_content(buf, content, first, last)
 end
 
 
-local function buffer_len(buf)
-	local count = 0
-	vim.api.nvim_buf_call(buf, function()
-		count = vim.fn.wordcount().chars
-	end)
-	return count
 end
 
 ---@return string
