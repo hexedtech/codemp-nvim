@@ -64,71 +64,7 @@ local function rowcol2byte(row, col, buf)
 	return off + col
 end
 
----@param first integer
----@param last integer
----@return integer, integer, integer, integer
-local function offset_to_rowcol(first, last)
-	local start_row, start_col, end_row, end_col
 
-	-- TODO this seems to work but i lost my sanity over it. if you want
-	--      to try and make it better be warned api is madness but i will
-	--      thank you a lot because this is an ugly mess...
-	--
-	--  edge cases to test:
-	--   - [x] add newline in buffer
-	--   - [x] append newline to buffer
-	--   - [x] delete multiline
-	--   - [x] append at end of buffer
-	--   - [x] delete at end of buffer
-	--   - [x] delete line at end of buffer
-	--   - [x] delete multiline at end of buffer
-	--   - [x] autocomplete
-	--   - [ ] delete whole buffer
-	--   - [ ] enter insert in newline with `o`
-
-	start_row = vim.fn.byte2line(first + 1) - 1
-	if start_row == -2 then
-		-- print("?? clamping start_row to start")
-		start_row = vim.fn.line('$') - 1
-	end
-	local first_col_byte = vim.fn.line2byte(start_row + 1) - 1
-	if first_col_byte == -2 then
-		-- print("?? clamping start_col to 0")
-		start_col = 0
-	else
-		start_col = first - first_col_byte
-	end
-	if first == last then
-		end_row = start_row
-		end_col = start_col
-	else
-		end_row = vim.fn.byte2line(last + 1) - 1
-		if end_row == -2 then
-			print("?? clamping end_row to end")
-			end_row = vim.fn.line('$') - 1
-			end_col = last - vim.fn.line2byte(end_row + 1)
-		else
-			end_col = last - (vim.fn.line2byte(end_row + 1) - 1)
-		end
-	end
-
-	-- TODO this is an older approach, which covers less edge cases
-	--      but i didnt bother documenting/testing it yet properly
-
-	----send help it works but why is lost knowledge
-	--start_row = vim.fn.byte2line(first + 1) - 1
-	--if start_row < 0 then start_row = 0 end
-	--local start_row_byte = vim.fn.line2byte(start_row + 1) - 1
-	--if start_row_byte < 0 then start_row_byte = 0 end
-	--start_col = first - start_row_byte
-	--end_row = vim.fn.byte2line(last + 1) - 1
-	--if end_row < 0 then end_row = 0 end
-	--local end_row_byte = vim.fn.line2byte(end_row + 1) - 1
-	--if end_row_byte < 0 then end_row_byte = 0 end
-	--end_col = last - end_row_byte
-
-	return start_row, start_col, end_row, end_col
-end
 
 ---@return [ [integer, integer], [integer, integer] ]
 local function cursor_position()
@@ -182,10 +118,12 @@ local function buffer_set_content(buf, content, first, last)
 			local line_count = vim.api.nvim_buf_line_count(buf)
 			last = vim.api.nvim_buf_get_offset(buf, line_count + 1)
 		end
-		local first_row, first_col, last_row, last_col
-		vim.api.nvim_buf_call(buf, function()
-			first_row, first_col, last_row, last_col = offset_to_rowcol(first or 0, last or 0)
-		end)
+
+		local first_row, first_col = byte2rowcol(first, buf)
+		if first_row == nil or first_col == nil then error("invalid start offset") end
+		local last_row, last_col = byte2rowcol(last, buf)
+		if last_row == nil or last_col == nil then error("invalid end offset") end
+
 		local content_array
 		if content == "" then
 			content_array = {}
