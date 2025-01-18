@@ -1,33 +1,6 @@
-local colors = {
-	{ "#AC7EA8", 175 },
-	{ "#81A1C1", 74  },
-	{ "#EBCB8B", 222 },
-	{ "#55886C", 72  },
-	{ "#D1888E", 167 },
-	{ "#8F81D4", 98  },
-	{ "#D69C63", 179 },
-}
-
-local function setup_colors()
-	for n, color in ipairs(colors) do
-		vim.api.nvim_set_hl(0, string.format("CodempUser%s", n), { fg = color[1], bg = nil, ctermfg = color[2], ctermbg = 0 })
-		vim.api.nvim_set_hl(0, string.format("CodempUserInverted%s", n), { fg = "#201F29", bg = color[1], ctermfg = 234, ctermbg = color[2] })
-	end
-end
-
----@class HighlightPair
----@field fg string
----@field bg string
-
----@param name string
----@return HighlightPair
-local function color(name)
-	local index = math.fmod(math.abs(CODEMP.native.hash(name)), #colors) + 1
-	return {
-		fg = "CodempUser" .. index,
-		bg = "CodempUserInverted" .. index,
-	}
-end
+--
+---- converters: row+col <-> byte offset
+--
 
 ---convert a global byte offset (0-indexed) to a (row, column) tuple (0-indexed)
 ---@param offset integer global index in buffer (first byte is #0)
@@ -59,13 +32,21 @@ local function rowcol2byte(row, col, buf)
 	if buf == nil then
 		buf = vim.api.nvim_get_current_buf()
 	end
-	local off = vim.api.nvim_buf_get_offset(buf, row)
-	if off == -1 then return nil end
-	return off + col
+	-- TODO naive implementation doesn't account for multi-byte characters!
+	--local off = vim.api.nvim_buf_get_offset(buf, row)
+	--if off == -1 then return nil end
+	--return off + col
+	-- TODO nvim LSP utils seem to cover this but can we rely on these?
+	return vim.lsp.util.character_offset(buf, row, col, 'utf-8')
 end
 
 
 
+--
+---- cursor utilities
+--
+
+---return current user cursor position, as a tuple of (row, columl) tuples (0-indexed)
 ---@return [ [integer, integer], [integer, integer] ]
 local function cursor_position()
 	local mode = vim.api.nvim_get_mode().mode
@@ -90,6 +71,12 @@ local function cursor_position()
 	end
 end
 
+
+
+--
+---- buffer utilities
+--
+
 ---return lenght for given buffer
 ---@param unit string either 'bytes' for byte count or 'chars' for characters count, default to 'chars'
 ---@return integer
@@ -101,6 +88,7 @@ local function buffer_len(buf, unit)
 	end)
 	return count
 end
+
 ---@param buf integer?
 ---@return string
 local function buffer_get_content(buf)
@@ -149,7 +137,47 @@ local function buffer_set_content(buf, content, first, last)
 end
 
 
+
+--
+---- codemp color palette and helper functions
+--
+
+local colors = {
+	{ "#AC7EA8", 175 },
+	{ "#81A1C1", 74  },
+	{ "#EBCB8B", 222 },
+	{ "#55886C", 72  },
+	{ "#D1888E", 167 },
+	{ "#8F81D4", 98  },
+	{ "#D69C63", 179 },
+}
+
+local function setup_colors()
+	for n, color in ipairs(colors) do
+		vim.api.nvim_set_hl(0, string.format("CodempUser%s", n), { fg = color[1], bg = nil, ctermfg = color[2], ctermbg = 0 })
+		vim.api.nvim_set_hl(0, string.format("CodempUserInverted%s", n), { fg = "#201F29", bg = color[1], ctermfg = 234, ctermbg = color[2] })
+	end
 end
+
+---@class HighlightPair
+---@field fg string
+---@field bg string
+
+---@param name string
+---@return HighlightPair
+local function color(name)
+	local index = math.fmod(math.abs(CODEMP.native.hash(name)), #colors) + 1
+	return {
+		fg = "CodempUser" .. index,
+		bg = "CodempUserInverted" .. index,
+	}
+end
+
+
+
+--
+---- platform utilities
+--
 
 ---@return string
 local function separator()
@@ -159,6 +187,9 @@ local function separator()
 		return '/'
 	end
 end
+
+
+
 
 return {
 	cursor = {
