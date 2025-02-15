@@ -28,6 +28,14 @@ if CODEMP == nil then
 			password = "",
 		},
 		setup = function (opts)
+			if CODEMP.native == nil then
+				CODEMP.native = require('codemp.loader').load() -- make sure we can load the native library correctly, otherwise no point going forward
+				if CODEMP.native == nil then
+					print(" !! could not load native bindings, try reloading")
+					return CODEMP
+				end
+			end
+
 			CODEMP.config = vim.tbl_extend('force', CODEMP.config, opts)
 			-- register logger
 			CODEMP.native.setup_tracing(CODEMP.config.debug_file or print, CODEMP.config.debug)
@@ -68,14 +76,6 @@ if CODEMP == nil then
 			require('codemp.utils').setup_colors() -- create highlight groups for users
 		end
 	}
-end
-
-if CODEMP.native == nil then
-	CODEMP.native = require('codemp.loader').load() -- make sure we can load the native library correctly, otherwise no point going forward
-	if CODEMP.native == nil then
-		print(" !! could not load native bindings, try reloading")
-		return CODEMP
-	end
 end
 
 return CODEMP
