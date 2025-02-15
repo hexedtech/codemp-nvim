@@ -170,20 +170,20 @@ local function join(workspace)
 				local event = ws:try_recv():await()
 				if event == nil then break end
 				if event.type == "UserLeave" then
-					if buffers.users[event.value] ~= nil then
-						local buf_name = buffers.users[event.value]
+					if buffers.users[event.name] ~= nil then
+						local buf_name = buffers.users[event.name]
 						local buf_id = buffers.map_rev[buf_name]
 						if buf_id ~= nil then
-							vim.api.nvim_buf_clear_namespace(buf_id, user_hl[event.value].ns, 0, -1)
+							vim.api.nvim_buf_clear_namespace(buf_id, user_hl[event.name].ns, 0, -1)
 						end
-						buffers.users[event.value] = nil
-						user_hl[event.value] = nil
+						buffers.users[event.name] = nil
+						user_hl[event.name] = nil
 					end
 				elseif event.type == "UserJoin" then
-					buffers.users[event.value] = ""
-					user_hl[event.value] = {
-						ns = vim.api.nvim_create_namespace("codemp-cursor-" .. event.value),
-						hi = utils.color(event.value),
+					buffers.users[event.name] = ""
+					user_hl[event.name] = {
+						ns = vim.api.nvim_create_namespace("codemp-cursor-" .. event.name),
+						hi = utils.color(event.name),
 						pos = { 0, 0 },
 						mark = nil,
 					}
