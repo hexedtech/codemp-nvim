@@ -155,38 +155,44 @@ local function join(workspace)
 		register_cursor_callback(ws:cursor(), ws:id())
 		register_cursor_handler(ws:cursor())
 		CODEMP.workspace = ws
-		for _, user in pairs(CODEMP.workspace:user_list()) do
-			buffers.users[user.name] = ""
-			user_hl[user.name] = {
-				ns = vim.api.nvim_create_namespace("codemp-cursor-" .. user.name),
-				hi = utils.color(user.name),
-				pos = { 0, 0 },
-				mark = nil,
-			}
-		end
-		require('codemp.window').update()
+		vim.schedule(function ()
+			for _, user in pairs(CODEMP.workspace:user_list()) do
+				buffers.users[user.name] = ""
+				user_hl[user.name] = {
+					ns = vim.api.nvim_create_namespace("codemp-cursor-" .. user.name),
+					hi = utils.color(user.name),
+					pos = { 0, 0 },
+					mark = nil,
+				}
+			end
+			require('codemp.window').update()
+		end)
 		local async = vim.uv.new_async(function ()
 			while true do
 				local event = ws:try_recv():await()
 				if event == nil then break end
 				if event.type == "UserLeave" then
 					if buffers.users[event.name] ~= nil then
-						local buf_name = buffers.users[event.name]
-						local buf_id = buffers.map_rev[buf_name]
-						if buf_id ~= nil then
-							vim.api.nvim_buf_clear_namespace(buf_id, user_hl[event.name].ns, 0, -1)
-						end
-						buffers.users[event.name] = nil
-						user_hl[event.name] = nil
+						vim.schedule(function()
+							local buf_name = buffers.users[event.name]
+							local buf_id = buffers.map_rev[buf_name]
+							if buf_id ~= nil then
+								vim.api.nvim_buf_clear_namespace(buf_id, user_hl[event.name].ns, 0, -1)
+							end
+							buffers.users[event.name] = nil
+							user_hl[event.name] = nil
+						end)
 					end
 				elseif event.type == "UserJoin" then
-					buffers.users[event.name] = ""
-					user_hl[event.name] = {
-						ns = vim.api.nvim_create_namespace("codemp-cursor-" .. event.name),
-						hi = utils.color(event.name),
-						pos = { 0, 0 },
-						mark = nil,
-					}
+					vim.schedule(function()
+						buffers.users[event.name] = ""
+						user_hl[event.name] = {
+							ns = vim.api.nvim_create_namespace("codemp-cursor-" .. event.name),
+							hi = utils.color(event.name),
+							pos = { 0, 0 },
+							mark = nil,
+						}
+					end)
 				end
 			end
 			vim.schedule(function () require('codemp.window').update() end)
