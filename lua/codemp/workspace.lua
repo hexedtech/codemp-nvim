@@ -189,7 +189,7 @@ local function join(workspace)
 					}
 				end
 			end
-			require('codemp.window').update()
+			vim.schedule(function () require('codemp.window').update() end)
 		end)
 		ws:callback(function(_) async:send() end)
 	end)
