@@ -18,20 +18,21 @@ local function connect()
 		CODEMP.client = client
 		require('codemp.window').update()
 		workspace.list()
+
+		events_poller = utils.poller(
+			function()
+				if CODEMP.client == nil then return nil end
+				return CODEMP.client:recv()
+			end,
+			---@param event SessionEvent
+			function(event)
+				if event.kind == SessionEventKind.InvitationEvent then
+					require('codemp.window').update()
+				end
+			end
+		)
 	end)
 
-	events_poller = utils.poller(
-		function()
-			if CODEMP.client == nil then return nil end
-			return CODEMP.client:recv()
-		end,
-		---@param event SessionEvent
-		function(event)
-			if event.kind == SessionEventKind.InvitationEvent then
-				require('codemp.window').update()
-			end
-		end
-	)
 end
 
 return {

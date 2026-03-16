@@ -30,10 +30,10 @@ local function color(name)
 end
 
 ---@class AsyncPoller
----@field promise WorkspaceEventPromise | nil
+---@field promise WorkspaceEventPromise | SessionEventPromise | nil
 ---@field timer luv.Timer
----@field generator fun(): WorkspaceEventPromise
----@field callback fun(e: WorkspaceEvent)
+---@field generator fun(): WorkspaceEventPromise | SessionEventPromise
+---@field callback fun(e: WorkspaceEvent | SessionEvent)
 ---@field stop fun(self: AsyncPoller)
 
 ---@return AsyncPoller
