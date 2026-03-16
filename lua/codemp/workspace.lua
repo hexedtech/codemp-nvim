@@ -26,8 +26,8 @@ local function fetch_workspaces_list()
 	end)
 end
 
----@type Selection
-local last_jump = { start_row = 0, start_col = 0, end_row = 0, end_col = 0 }
+---@type CursorPosition
+local last_jump = { start = { row = 0, col = 0 }, finish = { row = 0, col = 0 } }
 local workspace_callback_group = nil
 
 ---@param controller CursorController
@@ -54,12 +54,16 @@ local function register_cursor_callback(controller, name)
 				once = true
 				local _ = controller:send({
 					buffer = bufname,
-					sel = {
+					cursors = {
 						{
-							start_row = cur[1][1],
-							start_col = cur[1][2],
-							end_row = cur[2][1],
-							end_col = cur[2][2],
+							start = {
+								row = cur[1][1],
+								col = cur[1][2],
+							},
+							finish = {
+								row = cur[2][1],
+								col = cur[2][2],
+							},
 						},
 					},
 				}) -- no need to await here
@@ -68,12 +72,16 @@ local function register_cursor_callback(controller, name)
 				if once then
 					local _ = controller:send({
 						buffer = bufname,
-						sel = {
+						cursors = {
 							{
-								start_row = 0,
-								start_col = 0,
-								end_row = 0,
-								end_col = 0,
+								start = {
+									row = 0,
+									col = 0,
+								},
+								finish = {
+									row = 0,
+									col = 0,
+								},
 							},
 						}
 					}) -- no need to await here
@@ -105,8 +113,8 @@ local function register_cursor_handler(controller)
 						pos = { 0, 0 },
 					}
 				end
-				if #event.cursor.sel >= 1 then
-					user_hl[user].pos = { event.cursor.sel[1].start_row, event.cursor.sel[1].start_col }
+				if #event.position.cursors >= 1 then
+					user_hl[user].pos = { event.position.cursors[1].start.row, event.position.cursors[1].start.col }
 				end
 				local old_buffer = buffers.users[event.user]
 				if old_buffer ~= nil then
@@ -115,29 +123,29 @@ local function register_cursor_handler(controller)
 						vim.api.nvim_buf_clear_namespace(old_buffer_id, user_hl[event.user].ns, 0, -1)
 					end
 				end
-				buffers.users[event.user] = event.cursor.buffer
-				local buffer_id = buffers.map_rev[event.cursor.buffer]
+				buffers.users[event.user] = event.position.buffer
+				local buffer_id = buffers.map_rev[event.position.buffer]
 				if buffer_id ~= nil then
 					for _mark_idx, extmark in ipairs(user_hl[event.user].mark) do
 						vim.api.nvim_buf_del_extmark(buffer_id, user_hl[event.user].ns, extmark)
 					end
-					for sel_idx, sel in ipairs(event.cursor.sel) do
+					for sel_idx, sel in ipairs(event.position.cursors) do
 						local hi = user_hl[event.user].hi
-						local sel_end_col_2 = sel.end_col -- TODO can't set the tuple field? need to copy out
-						if sel.start_row == sel.end_row and sel.start_col == sel.end_col then
+						local sel_end_col_2 = sel.finish.col -- TODO can't set the tuple field? need to copy out
+						if sel.start.row == sel.finish.row and sel.start.col == sel.finish.col then
 							-- vim can't draw 0-width cursors, so we always expand them to at least 1 width
-							sel_end_col_2 = sel.end_col + 1
+							sel_end_col_2 = sel.finish.col + 1
 						end
 						table.insert(
 							user_hl[event.user].mark,
 							vim.api.nvim_buf_set_extmark(
 								buffer_id,
 								user_hl[event.user].ns,
-								sel.start_row,
-								sel.start_col,
+								sel.start.row,
+								sel.start.col,
 								{
 									id = nil, -- create new one
-									end_row = sel.end_row,
+									end_row = sel.finish.row,
 									end_col = sel_end_col_2,
 									hl_group = hi.bg,
 									virt_text_pos = "right_align",
@@ -155,11 +163,11 @@ local function register_cursor_handler(controller)
 						)
 					end
 				end
-				if old_buffer ~= event.cursor.buffer then
+				if old_buffer ~= event.position.buffer then
 					require('codemp.window').update() -- redraw user positions
 				end
 				if CODEMP.following ~= nil and CODEMP.following == event.user then
-					local buf_id = buffers.map_rev[event.cursor.buffer]
+					local buf_id = buffers.map_rev[event.position.buffer]
 					if buf_id ~= nil then
 						local win = vim.api.nvim_get_current_win()
 						local curr_buf = vim.api.nvim_get_current_buf()
@@ -167,13 +175,15 @@ local function register_cursor_handler(controller)
 						if curr_buf ~= buf_id then
 							vim.api.nvim_win_set_buf(win, buf_id)
 						end
-						-- keep centered the cursor end that is currently being moved, but prefer start
-						if event.cursor.sel[1].start_row == last_jump.start_row and event.cursor.sel[1].start_col == last_jump.start_col then
-							vim.api.nvim_win_set_cursor(win, { event.cursor.sel[1].end_row + 1, event.cursor.sel[1].end_col })
-						else
-							vim.api.nvim_win_set_cursor(win, { event.cursor.sel[1].start_row + 1, event.cursor.sel[1].start_col })
+						if #event.position.cursors > 1 then
+							-- keep centered the cursor end that is currently being moved, but prefer start
+							if event.position.cursors[1].start.row == last_jump.start.row and event.position.cursors[1].start.col == last_jump.start.col then
+								vim.api.nvim_win_set_cursor(win, { event.position.cursors[1].finish.row + 1, event.position.cursors[1].finish.col })
+							else
+								vim.api.nvim_win_set_cursor(win, { event.position.cursors[1].start.row + 1, event.position.cursors[1].start.col })
+							end
+							last_jump = event.position.cursors[1]
 						end
-						last_jump = event.cursor.sel[1]
 					end
 				end
 			end
@@ -212,25 +222,30 @@ local function join(user, workspace)
 				if wspace == nil then return nil end
 				return wspace:recv()
 			end,
+			---@param event WorkspaceEvent
 			function(event)
-				if event.type == "leave" then
-					if buffers.users[event.value] ~= nil then
-						local buf_name = buffers.users[event.value]
+				if event.kind == WorkspaceEventKind.UserLeaveWorkspace then
+					if buffers.users[event.user] ~= nil then
+						local buf_name = buffers.map[event.user]
 						local buf_id = buffers.map_rev[buf_name]
 						if buf_id ~= nil then
-							vim.api.nvim_buf_clear_namespace(buf_id, user_hl[event.value].ns, 0, -1)
+							vim.api.nvim_buf_clear_namespace(buf_id, user_hl[event.user].ns, 0, -1)
 						end
-						buffers.users[event.value] = nil
-						user_hl[event.value] = nil
+						buffers.users[event.user] = nil
+						user_hl[event.user] = nil
 					end
-				elseif event.type == "join" then
-					buffers.users[event.value] = ""
-					user_hl[event.value] = {
-						ns = vim.api.nvim_create_namespace("codemp-cursor-" .. event.value),
-						hi = utils.color(event.value),
+				elseif event.kind == WorkspaceEventKind.UserJoinWorkspace then
+					buffers.users[event.user] = ""
+					user_hl[event.user] = {
+						ns = vim.api.nvim_create_namespace("codemp-cursor-" .. event.user),
+						hi = utils.color(event.user),
 						pos = { 0, 0 },
 						mark = { },
 					}
+				elseif event.kind == WorkspaceEventKind.FileDelete then
+					buffers.detach(event.path)
+				else
+					print(vim.inspect(event))
 				end
 				require('codemp.window').update()
 			end
