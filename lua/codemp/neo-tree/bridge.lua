@@ -163,6 +163,7 @@ M.update_state = function(state)
 		table.insert(state.default_expanded_nodes, status_section.id)
 		table.insert(status_section.children, new_entry("id", CODEMP.client:current_user().name))
 		table.insert(status_section.children, new_entry("name", CODEMP.client:current_user().display_name or ""))
+		table.insert(status_section.children, new_entry("bio", CODEMP.client:current_user().description or ""))
 
 		table.insert(root, spacer())
 		table.insert(root, status_section)
