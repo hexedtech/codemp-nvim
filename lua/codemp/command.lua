@@ -31,7 +31,7 @@ local base_actions = {
 -- only available if state.client is not nil
 local connected_actions = {
 	id = function()
-		print("> codemp::" .. CODEMP.client.id)
+		print("> codemp::" .. CODEMP.client:current_user().name)
 	end,
 
 	join = function(ws)
@@ -39,10 +39,11 @@ local connected_actions = {
 			local opts = { prompt = "Select workspace to join:", format_item = function (x) return x.name end }
 			return vim.ui.select(CODEMP.available, opts, function (choice)
 				if choice == nil then return end -- action canceled by user
-				workspace.join(CODEMP.available[choice].name)
+				workspace.join(CODEMP.available[choice].user, CODEMP.available[choice].workspace)
 			end)
 		else
-			workspace.join(ws)
+			local ws_split = utils.split(ws, "/")
+			workspace.join(ws_split[1], ws_split[2])
 		end
 	end,
 
@@ -56,11 +57,11 @@ local connected_actions = {
 
 	available = function()
 		CODEMP.available = {}
-		for _, ws in ipairs(CODEMP.client:list_workspaces(true, false):await()) do
+		for _, ws in ipairs(CODEMP.client:fetch_owned_workspaces():await()) do
 			print(" ++ " .. ws)
 			table.insert(CODEMP.available, ws)
 		end
-		for _, ws in ipairs(CODEMP.client:list_workspaces(false, true):await()) do
+		for _, ws in ipairs(CODEMP.client:fetch_joined_workspaces():await()) do
 			print(" -- " .. ws)
 			table.insert(CODEMP.available, ws)
 		end
@@ -70,7 +71,7 @@ local connected_actions = {
 	invite = function(user)
 		local ws
 		if CODEMP.workspace ~= nil then
-			ws = CODEMP.workspace.name
+			ws = CODEMP.workspace:id().workspace
 		else
 			ws = vim.fn.input("workspace > ", "")
 		end
@@ -79,8 +80,20 @@ local connected_actions = {
 		end)
 	end,
 
+	accept = function(workspace)
+		local ws
+		if workspace ~= nil then
+			ws = utils.split(workspace, '/')
+		else
+			local owner = vim.fn.input("owner > ", "")
+			local name = vim.fn.input("workspace > ", "")
+			ws = { owner, name }
+		end
+		CODEMP.client:accept_invite(ws[1], ws[2]):await()
+	end,
+
 	disconnect = function()
-		print(" xx disconnecting client " .. CODEMP.client.id)
+		print(" xx disconnecting client " .. CODEMP.client:current_user().name)
 		CODEMP.client = nil -- should drop and thus close everything
 		collectgarbage("collect") -- make sure we drop
 	end,
@@ -113,13 +126,13 @@ local joined_actions = {
 
 	delete = function(path)
 		if path == nil then error("missing buffer name") end
-		CODEMP.workspace:delete(path):and_then(function()
+		CODEMP.workspace:delete_buffer(path):and_then(function()
 			print(" xx  deleted buffer " .. path)
 		end)
 	end,
 
 	buffers = function()
-		for _, buf in ipairs(CODEMP.workspace:filetree()) do
+		for _, buf in ipairs(CODEMP.workspace:search_buffers()) do
 			if buffers.map_rev[buf] ~= nil then
 				print(" +- " .. buf)
 			else
@@ -144,7 +157,7 @@ local joined_actions = {
 			buffers.attach(p, { buffer = buffer })
 		end
 		if path == nil then
-			local filetree = CODEMP.workspace:filetree(nil, false)
+			local filetree = CODEMP.workspace:search_buffers()
 			return vim.ui.select(filetree, { prompt = "Select buffer to attach to:" }, function (choice)
 				if choice == nil then return end -- action canceled by user
 				doit(filetree[choice])
@@ -228,7 +241,7 @@ vim.api.nvim_create_user_command(
 					if CODEMP.client ~= nil and CODEMP.workspace ~= nil then
 						local choices
 						if last_arg == "attach" then
-							choices = CODEMP.workspace:filetree()
+							choices = CODEMP.workspace:search_buffers()
 						elseif last_arg == "detach" then
 							choices = CODEMP.workspace.active_buffers
 						end

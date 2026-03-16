@@ -216,6 +216,26 @@ local function separator()
 	end
 end
 
+---@param identifier WorkspaceIdentifier
+---@return string combined workspace identifier
+local function wsid(identifier)
+	return identifier.user .. '/' .. identifier.workspace
+end
+
+---@param input string input string to split
+---@param sep string? separator to split at, if not given splits at any whitespace
+---@return string[]
+local function split(input, sep)
+	if sep == nil then
+		sep = "%s"
+	end
+	local t = {}
+	for str in string.gmatch(input, "([^"..sep.."]+)") do
+		table.insert(t, str)
+	end
+	return t
+end
+
 return {
 	cursor = {
 		position = cursor_position,
@@ -225,9 +245,11 @@ return {
 		get_content = buffer_get_content,
 		set_content = buffer_set_content,
 	},
-	available_colors = available_colors,
+	available_colors = colors,
 	color = color,
 	poller = async_poller,
 	sep = separator,
 	setup_colors = setup_colors,
+	wsid = wsid,
+	split = split,
 }

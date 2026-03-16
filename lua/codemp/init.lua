@@ -7,7 +7,7 @@ if CODEMP == nil then
 	---@field rt? RuntimeDriver background codemp runtime
 	---@field client? Client currently connected client
 	---@field workspace? Workspace current active workspace
-	---@field available WorkspaceReference[] available workspaces to connect to
+	---@field available WorkspaceIdentifier[] available workspaces to connect to
 	---@field timer? any libuv timer
 	---@field config Config codemp configuration
 	---@field following string | nil
@@ -21,6 +21,8 @@ if CODEMP == nil then
 		following = nil,
 		ignore_following_action = false,
 		config = {
+			host = "codemp.moonlit.technology",
+			tls = false,
 			neo_tree = false,
 			timer_interval = 20,
 			debug = false,
@@ -34,7 +36,7 @@ if CODEMP == nil then
 			-- start background runtime, with stop event
 			CODEMP.rt = CODEMP.native.setup_driver() -- spawn thread to drive tokio runtime
 			vim.api.nvim_create_autocmd(
-				{"ExitPre"},
+				{"VimLeave"},
 				{
 					callback = function (_ev)
 						if CODEMP.client ~= nil then
