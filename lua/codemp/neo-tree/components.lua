@@ -27,7 +27,11 @@ M.icon = function(config, node, state)
 		else
 			icon = "+"
 		end
-		highlight = highlights.FILE_ICON
+		if node.extra.ephemeral then
+			highlight = highlights.GIT_STAGED
+		else
+			highlight = highlights.FILE_ICON
+		end
 	elseif node.type == "directory" then
 		icon = "= "
 		highlight = highlights.DIRECTORY_ICON

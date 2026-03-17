@@ -46,10 +46,10 @@ local function update_window()
 	tmp = tmp .. " |: " .. CODEMP.workspace:id().workspace .. "\n"
 	tmp = tmp .. " |\n"
 	local base_row = 3
-	for n, path in pairs(tree) do
-		tmp = tmp .. " |- " .. path .. "\n"
+	for n, node in pairs(tree) do
+		tmp = tmp .. " |- " .. node.path .. "\n"
 		base_row = 3 + n
-		buffer_to_row[path] = base_row
+		buffer_to_row[node.path] = base_row
 	end
 	tmp = tmp .. "\n\n\n"
 	base_row = base_row + 3

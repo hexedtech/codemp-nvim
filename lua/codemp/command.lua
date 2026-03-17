@@ -101,9 +101,9 @@ local connected_actions = {
 
 -- only available if state.workspace is not nil
 local joined_actions = {
-	create = function(path)
+	create = function(path, bang)
 		if path == nil then error("missing buffer name") end
-		buffers.create(path)
+		buffers.create(path, bang)
 	end,
 
 	share = function(path, bang)
@@ -132,17 +132,31 @@ local joined_actions = {
 	end,
 
 	buffers = function()
-		for _, buf in ipairs(CODEMP.workspace:search_buffers()) do
-			if buffers.map_rev[buf] ~= nil then
-				print(" +- " .. buf)
+		for _, node in ipairs(CODEMP.workspace:search_buffers()) do
+			local ext = ""
+			if node.ephemeral then
+				ext = " *"
+			end
+			if buffers.map_rev[node.path] ~= nil then
+				print(" +- " .. node.path .. ext)
 			else
-				print(" -- " .. buf)
+				print(" -- " .. node.path .. ext)
 			end
 		end
 	end,
 
 	sync = function()
 		buffers.sync()
+	end,
+
+	pin = function()
+		local b = vim.api.nvim_get_current_buf()
+		CODEMP.workspace:pin_buffer(buffers.map[b]):await()
+	end,
+
+	unpin = function()
+		local b = vim.api.nvim_get_current_buf()
+		CODEMP.workspace:un_pin_buffer(buffers.map[b]):await()
 	end,
 
 	attach = function(path, bang)
@@ -158,6 +172,10 @@ local joined_actions = {
 		end
 		if path == nil then
 			local filetree = CODEMP.workspace:search_buffers()
+			local choices = {}
+			for _, node in ipairs(filetree) do
+				table.insert(choices, node.path)
+			end
 			return vim.ui.select(filetree, { prompt = "Select buffer to attach to:" }, function (choice)
 				if choice == nil then return end -- action canceled by user
 				doit(filetree[choice])
@@ -241,7 +259,11 @@ vim.api.nvim_create_user_command(
 					if CODEMP.client ~= nil and CODEMP.workspace ~= nil then
 						local choices
 						if last_arg == "attach" then
-							choices = CODEMP.workspace:search_buffers()
+							choices = {}
+							local bufs = CODEMP.workspace:search_buffers()
+							for _, node in ipairs(bufs) do
+								table.insert(choices, node.path)
+							end
 						elseif last_arg == "detach" then
 							choices = CODEMP.workspace.active_buffers
 						end

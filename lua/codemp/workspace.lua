@@ -1,5 +1,6 @@
 local utils = require('codemp.utils')
 local buffers = require('codemp.buffers')
+local enums = require("codemp.enums")
 
 ---@class UserHighlight
 ---@field ns integer namespace to use for this user
@@ -224,7 +225,7 @@ local function join(user, workspace)
 			end,
 			---@param event WorkspaceEvent
 			function(event)
-				if event.kind == WorkspaceEventKind.UserLeaveWorkspace then
+				if event.kind == enums.WorkspaceEventKind.UserLeaveWorkspace then
 					if buffers.users[event.user] ~= nil then
 						local buf_name = buffers.map[event.user]
 						local buf_id = buffers.map_rev[buf_name]
@@ -234,7 +235,7 @@ local function join(user, workspace)
 						buffers.users[event.user] = nil
 						user_hl[event.user] = nil
 					end
-				elseif event.kind == WorkspaceEventKind.UserJoinWorkspace then
+				elseif event.kind == enums.WorkspaceEventKind.UserJoinWorkspace then
 					buffers.users[event.user] = ""
 					user_hl[event.user] = {
 						ns = vim.api.nvim_create_namespace("codemp-cursor-" .. event.user),
@@ -242,10 +243,8 @@ local function join(user, workspace)
 						pos = { 0, 0 },
 						mark = { },
 					}
-				elseif event.kind == WorkspaceEventKind.FileDelete then
+				elseif event.kind == enums.WorkspaceEventKind.FileDelete then
 					buffers.detach(event.path)
-				else
-					print(vim.inspect(event))
 				end
 				require('codemp.window').update()
 			end

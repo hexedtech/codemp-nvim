@@ -6,6 +6,8 @@ local id_buffer_map = {}
 local buffer_id_map = {}
 ---@type table<string, string>
 local user_buffer_name = {}
+---@type table<string, boolean>
+local buffer_ephemeral_map = {}
 local ticks = {}
 
 ---@param name string
@@ -22,6 +24,12 @@ local function detach(name)
 	print(" -- detached from buffer " .. name)
 
 	require('codemp.window').update()
+end
+
+---@param ws Workspace
+---@param buf string
+---@return boolean
+local function is_ephemeral(ws, buf)
 end
 
 ---@class AttachOptions

@@ -1,5 +1,6 @@
 local workspace = require("codemp.workspace")
 local utils = require("codemp.utils")
+local enums = require("codemp.enums")
 
 local events_poller = nil
 
@@ -26,7 +27,7 @@ local function connect()
 			end,
 			---@param event SessionEvent
 			function(event)
-				if event.kind == SessionEventKind.InvitationEvent then
+				if event.kind == enums.SessionEventKind.InvitationEvent then
 					require('codemp.window').update()
 				end
 			end

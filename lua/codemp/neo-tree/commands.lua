@@ -65,12 +65,10 @@ M.open = function(state, path, extra)
 		CODEMP.following = selected.name
 		local _ = CODEMP.workspace:cursor():send({
 			buffer = "",
-			sel = {
+			cursors = {
 				{
-					start_row = 0,
-					start_col = 0,
-					end_row = 0,
-					end_col = 0,
+					start = { row = 0, col = 0 },
+					finish = { row = 0, col = 0 },
 				}
 			}
 		}) -- clear current cursor
@@ -161,7 +159,7 @@ M.add = function(state, path, extra)
 		if vim.startswith(selected.name, "#") then
 			vim.ui.input({ prompt = "new buffer path" }, function(input)
 				if input == nil or input == "" then return end
-				CODEMP.workspace:create_buffer(input, false):and_then(function ()
+				CODEMP.workspace:create_buffer(input, true):and_then(function ()
 					manager.refresh("codemp")
 				end)
 			end)

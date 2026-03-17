@@ -7,13 +7,14 @@ local M = {}
 
 ---@param workspace string workspace name
 ---@param path string buffer relative path
+---@param ephemeral boolean
 ---@return NuiTree.Node
-local function new_item(workspace, path)
+local function new_item(workspace, path, ephemeral)
 	return {
 		id = string.format("codemp://%s/item/%s", workspace, path),
 		name = path,
 		type = "buffer",
-		extra = {},
+		extra = { ephemeral = ephemeral },
 		children = {},
 	}
 end
@@ -133,8 +134,8 @@ M.update_state = function(state)
 	if CODEMP.workspace ~= nil then
 		local ws_section = new_root("#" .. utils.wsid(CODEMP.workspace:id()))
 		table.insert(state.default_expanded_nodes, ws_section.id)
-		for i, path in ipairs(CODEMP.workspace:search_buffers()) do
-			table.insert(ws_section.children, new_item(utils.wsid(CODEMP.workspace:id()), path))
+		for i, node in ipairs(CODEMP.workspace:search_buffers()) do
+			table.insert(ws_section.children, new_item(utils.wsid(CODEMP.workspace:id()), node.path, node.ephemeral))
 		end
 
 		local usr_section = new_root("users")
