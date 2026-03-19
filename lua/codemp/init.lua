@@ -11,6 +11,7 @@ if CODEMP == nil then
 	---@field timer? any libuv timer
 	---@field config Config codemp configuration
 	---@field following string | nil
+	---@field auto_share boolean automatically share opened buffers
 	---@field ignore_following_action boolean TODO a more elegant solution?
 	---@field setup fun(opts: Config): nil update config and setup plugin
 	CODEMP = {
@@ -20,17 +21,22 @@ if CODEMP == nil then
 		available = {},
 		following = nil,
 		ignore_following_action = false,
+		auto_share = false,
 		config = {
 			host = "codemp.moonlit.technology",
 			tls = false,
 			neo_tree = false,
 			timer_interval = 20,
 			debug = false,
+			-- debug_file = "/home/alemi/.local/share/nvim/logs/codemp.log",
 			username = "",
 			password = "",
 		},
 		setup = function (opts)
 			CODEMP.config = vim.tbl_extend('force', CODEMP.config, opts)
+			if CODEMP.config.auto_share ~= nil then -- if given, set initial value
+				CODEMP.auto_share = CODEMP.config.auto_share
+			end
 			-- register logger
 			CODEMP.native.setup_tracing(CODEMP.config.debug_file or print, CODEMP.config.debug)
 			-- start background runtime, with stop event

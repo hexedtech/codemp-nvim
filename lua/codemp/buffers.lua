@@ -242,7 +242,7 @@ local function create(buffer, ephemeral)
 	if CODEMP.workspace == nil then
 		error("join a workspace first")
 	end
-	CODEMP.workspace:create_buffer(buffer, { ephemeral = ephemeral }):and_then(function ()
+	CODEMP.workspace:create_buffer(buffer, { ephemeral = ephemeral or false }):and_then(function ()
 		print(" ++  created buffer " .. buffer)
 		require('codemp.window').update()
 	end)

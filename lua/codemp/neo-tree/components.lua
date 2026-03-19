@@ -62,6 +62,9 @@ M.icon = function(config, node, state)
 	elseif node.type == "button" then
 		icon = " "
 		highlight = highlights.NORMAL
+	elseif node.type == "option" then
+		icon = node.extra.key .. " "
+		highlight = highlights.NORMAL
 	end
 
 	return {
@@ -79,6 +82,9 @@ M.name = function(config, node, state)
 	elseif node.type == "root" then
 		highlight = highlights.FILTER_TERM
 	elseif node.type == "button" then
+		text = " " .. node.name .. " "
+		highlight = highlights.FLOAT_TITLE
+	elseif node.type == "option" then
 		text = " " .. node.name .. " "
 		highlight = highlights.FLOAT_TITLE
 	end

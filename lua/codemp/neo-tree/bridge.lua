@@ -32,6 +32,19 @@ local function new_user(workspace, username)
 	}
 end
 
+---@param key string option name
+---@param value any option value
+---@return NuiTree.Node
+local function new_option(key, value)
+	return {
+		id = string.format("codemp://opts::%s", key),
+		name = string.format("%s", value),
+		type = "option",
+		extra = { key = key },
+		children = {},
+	}
+end
+
 ---@param name string workspace name
 ---@param owned boolean true if this workspace is owned by us
 ---@param expanded? boolean if node should be pre-expanded
@@ -165,6 +178,8 @@ M.update_state = function(state)
 		table.insert(status_section.children, new_entry("id", CODEMP.client:current_user().name))
 		table.insert(status_section.children, new_entry("name", CODEMP.client:current_user().display_name or ""))
 		table.insert(status_section.children, new_entry("bio", CODEMP.client:current_user().description or ""))
+		table.insert(status_section.children, spacer())
+		table.insert(status_section.children, new_option("auto-share", CODEMP.auto_share))
 
 		table.insert(root, spacer())
 		table.insert(root, status_section)

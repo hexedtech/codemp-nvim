@@ -53,6 +53,11 @@ M.default_config = {
 			{ "icon" },
 			{ "name" },
 		},
+		option = {
+			{ "indent" },
+			{ "icon" },
+			{ "name" },
+		},
 	},
 }
 

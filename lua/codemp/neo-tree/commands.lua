@@ -36,6 +36,12 @@ M.open = function(state, path, extra)
 			client_manager.connect()
 		end
 		return
+	elseif selected.type == "option" then
+		if selected.extra.key == "auto-share" then
+			CODEMP.auto_share = not CODEMP.auto_share
+		end
+		manager.refresh("codemp")
+		return
 	end
 	if selected.type == "workspace" then
 		if CODEMP.workspace ~= nil and utils.wsid(CODEMP.workspace:id()) ~= selected.name then

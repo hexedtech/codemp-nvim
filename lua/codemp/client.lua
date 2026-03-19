@@ -1,4 +1,5 @@
 local workspace = require("codemp.workspace")
+local buffers = require("codemp.buffers")
 local utils = require("codemp.utils")
 local enums = require("codemp.enums")
 
@@ -32,7 +33,32 @@ local function connect()
 				end
 			end
 		)
+
+		local client_buffer_callback_group = vim.api.nvim_create_augroup("codemp-client-" .. client:current_user().name, {})
+
+		vim.api.nvim_create_autocmd({"BufReadPost"}, {
+			group = client_buffer_callback_group,
+			callback = function (ev)
+				if CODEMP.workspace ~= nil and CODEMP.auto_share then
+					local bufname = string.gsub(
+						vim.api.nvim_buf_get_name(ev.buf),
+						vim.fn.getcwd() .. '/',
+						""
+					)
+					if buffers.map_rev[bufname] == nil then
+						CODEMP.workspace:create_buffer(bufname, { ephemeral = true }):and_then(function ()
+							buffers.attach(bufname, {
+								buffer = ev.buf,
+								content = utils.buffer.get_content(ev.buf),
+								skip_exists_check = true,
+							})
+						end)
+					end
+				end
+			end
+		})
 	end)
+
 
 end
 

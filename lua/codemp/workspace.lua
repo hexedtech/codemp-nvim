@@ -169,6 +169,11 @@ local function register_cursor_handler(controller)
 				end
 				if CODEMP.following ~= nil and CODEMP.following == event.user then
 					local buf_id = buffers.map_rev[event.position.buffer]
+					-- TODO attach to buffer possibly!
+					-- if buf_id == nil then
+					-- 	buffers.attach(event.position.buffer)
+					-- end
+					-- buf_id = buffers.map_rev[event.position.buffer]
 					if buf_id ~= nil then
 						local win = vim.api.nvim_get_current_win()
 						local curr_buf = vim.api.nvim_get_current_buf()
@@ -228,14 +233,14 @@ local function join(user, workspace)
 			function(event)
 				if event.kind == enums.WorkspaceEventKind.UserLeaveWorkspace then
 					if buffers.users[event.user] ~= nil then
-						local buf_name = buffers.map[event.user]
+						local buf_name = buffers.users[event.user]
 						local buf_id = buffers.map_rev[buf_name]
 						if buf_id ~= nil then
 							vim.api.nvim_buf_clear_namespace(buf_id, user_hl[event.user].ns, 0, -1)
 						end
-						buffers.users[event.user] = nil
-						user_hl[event.user] = nil
 					end
+					buffers.users[event.user] = nil
+					user_hl[event.user] = nil
 				elseif event.kind == enums.WorkspaceEventKind.UserJoinWorkspace then
 					buffers.users[event.user] = ""
 					user_hl[event.user] = {

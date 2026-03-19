@@ -53,7 +53,7 @@ if os_uname.sysname == "Windows_NT" then
 	print("downloading in background... library will be installed upon restart")
 
 	vim.api.nvim_create_autocmd(
-		{"ExitPre"},
+		{"VimLeave"},
 		{
 			callback = function (_ev)
 				local handle, pid = vim.uv.spawn("cmd.exe", {
@@ -75,7 +75,7 @@ else
 		print(res.stderr)
 	end
 	vim.api.nvim_create_autocmd(
-		{"ExitPre"},
+		{"VimLeave"},
 		{
 			callback = function (_ev)
 				vim.system({"mv", native_path, replace_native_path}, { detach = true })
