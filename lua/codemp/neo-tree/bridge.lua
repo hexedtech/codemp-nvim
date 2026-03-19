@@ -135,7 +135,7 @@ M.update_state = function(state)
 		local ws_section = new_root("#" .. utils.wsid(CODEMP.workspace:id()))
 		table.insert(state.default_expanded_nodes, ws_section.id)
 		for i, node in ipairs(CODEMP.workspace:search_buffers()) do
-			table.insert(ws_section.children, new_item(utils.wsid(CODEMP.workspace:id()), node.path, node.ephemeral))
+			table.insert(ws_section.children, new_item(utils.wsid(CODEMP.workspace:id()), node.path.path, node.attributes.ephemeral))
 		end
 
 		local usr_section = new_root("users")

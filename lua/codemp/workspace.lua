@@ -219,6 +219,7 @@ local function join(user, workspace)
 		events_poller = utils.poller(
 			function()
 				if CODEMP.client == nil then return nil end
+				-- TODO can we just pass workspace in?
 				local wspace = CODEMP.client:get_workspace(ws_id.user, ws_id.workspace)
 				if wspace == nil then return nil end
 				return wspace:recv()
@@ -243,8 +244,10 @@ local function join(user, workspace)
 						pos = { 0, 0 },
 						mark = { },
 					}
-				elseif event.kind == enums.WorkspaceEventKind.FileDelete then
-					buffers.detach(event.path)
+				elseif event.kind == enums.WorkspaceEventKind.BufferDelete then
+					if buffers.map_rev[event.path] ~= nil then
+						buffers.detach(event.path)
+					end
 				end
 				require('codemp.window').update()
 			end
@@ -269,15 +272,19 @@ local function leave()
 		events_poller:stop()
 		events_poller = nil
 	end
+
+	-- TODO codemp disconnects when all references to its objects are dropped. since it
+	-- hands out Arc<> of things, all references still not garbage collected in Lua will
+	-- prevent it from disconnecting. while running a full cycle may be a bit slow, this
+	-- only happens when manually requested, and it's not like the extra garbage collection
+	-- is an effort for nothing... still it would be more elegant to not need this!!
+	collectgarbage("collect")
 	if not CODEMP.client:leave_workspace(ws_id.user, ws_id.workspace) then
-		collectgarbage("collect")
-		-- TODO codemp disconnects when all references to its objects are dropped. since it
-		-- hands out Arc<> of things, all references still not garbage collected in Lua will
-		-- prevent it from disconnecting. while running a full cycle may be a bit slow, this
-		-- only happens when manually requested, and it's not like the extra garbage collection
-		-- is an effort for nothing... still it would be more elegant to not need this!!
+		print(" -! left workspace " .. ws_id.workspace .. " but there are leftover references")
+	else
+		print(" -- left workspace " .. ws_id.workspace)
 	end
-	print(" -- left workspace " .. ws_id.workspace)
+
 	require('codemp.window').update()
 end
 

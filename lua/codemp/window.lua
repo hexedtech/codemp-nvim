@@ -47,9 +47,9 @@ local function update_window()
 	tmp = tmp .. " |\n"
 	local base_row = 3
 	for n, node in pairs(tree) do
-		tmp = tmp .. " |- " .. node.path .. "\n"
+		tmp = tmp .. " |- " .. node.path.path .. "\n"
 		base_row = 3 + n
-		buffer_to_row[node.path] = base_row
+		buffer_to_row[node.path.path] = base_row
 	end
 	tmp = tmp .. "\n\n\n"
 	base_row = base_row + 3

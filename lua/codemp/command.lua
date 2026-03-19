@@ -134,13 +134,13 @@ local joined_actions = {
 	buffers = function()
 		for _, node in ipairs(CODEMP.workspace:search_buffers()) do
 			local ext = ""
-			if node.ephemeral then
+			if node.attributes.ephemeral then
 				ext = " *"
 			end
-			if buffers.map_rev[node.path] ~= nil then
-				print(" +- " .. node.path .. ext)
+			if buffers.map_rev[node.path.path] ~= nil then
+				print(" +- " .. node.path.path .. ext)
 			else
-				print(" -- " .. node.path .. ext)
+				print(" -- " .. node.path.path .. ext)
 			end
 		end
 	end,
@@ -174,7 +174,7 @@ local joined_actions = {
 			local filetree = CODEMP.workspace:search_buffers()
 			local choices = {}
 			for _, node in ipairs(filetree) do
-				table.insert(choices, node.path)
+				table.insert(choices, node.path.path)
 			end
 			return vim.ui.select(filetree, { prompt = "Select buffer to attach to:" }, function (choice)
 				if choice == nil then return end -- action canceled by user
@@ -262,7 +262,7 @@ vim.api.nvim_create_user_command(
 							choices = {}
 							local bufs = CODEMP.workspace:search_buffers()
 							for _, node in ipairs(bufs) do
-								table.insert(choices, node.path)
+								table.insert(choices, node.path.path)
 							end
 						elseif last_arg == "detach" then
 							choices = CODEMP.workspace.active_buffers

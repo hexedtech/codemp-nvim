@@ -16,20 +16,17 @@ local function detach(name)
 	local buffer = buffer_id_map[name]
 	id_buffer_map[buffer] = nil
 	buffer_id_map[name] = nil
+	vim.api.nvim_buf_delete(buffer, { force = true })
 	CODEMP.workspace:get_buffer(name):clear_callback()
+	collectgarbage("collect") -- clear all our lua references, so it can be dropped
 	if not CODEMP.workspace:detach_buffer(name) then
-		collectgarbage("collect") -- clear dangling references
+		collectgarbage("collect")
+		print(" -! detached from buffer " .. name .. " with leftover references")
+	else
+		print(" -- detached from buffer " .. name)
 	end
 
-	print(" -- detached from buffer " .. name)
-
 	require('codemp.window').update()
-end
-
----@param ws Workspace
----@param buf string
----@return boolean
-local function is_ephemeral(ws, buf)
 end
 
 ---@class AttachOptions
@@ -75,6 +72,7 @@ local function attach(name, opts)
 					if promise.ready then break end
 					vim.uv.sleep(100)
 				end
+				promise:cancel()
 			end
 
 			if opts.window ~= nil then
@@ -94,6 +92,9 @@ local function attach(name, opts)
 				on_bytes = function(_, buf, tick, start_row, start_col, start_offset, old_end_row, old_end_col, old_end_byte_len, new_end_row, new_end_col, new_byte_len)
 					if tick == ticks[buf] then return end
 					if id_buffer_map[buf] == nil then return true end -- unregister callback handler
+					local cnt = CODEMP.workspace:get_buffer(name)
+					-- TODO can we pass in controller without making it a permanent dangling ref?
+					if cnt == nil then return end
 					if CODEMP.config.debug then print(string.format(
 						"start(row:%s, col:%s) offset:%s end(row:%s, col:%s new(row:%s, col:%s)) len(old:%s, new:%s)",
 						start_row, start_col, start_offset, old_end_row, old_end_col, new_end_row, new_end_col, old_end_byte_len, new_byte_len
@@ -131,7 +132,7 @@ local function attach(name, opts)
 					if CODEMP.config.debug then
 						print(string.format("sending: %s..%s '%s'", start_offset, start_offset + old_end_byte_len, change_content))
 					end
-					controller:send({
+					cnt:send({
 						start_idx = start_offset, end_idx = end_offset, content = change_content
 					})
 				end,
@@ -140,9 +141,13 @@ local function attach(name, opts)
 			local lock = false
 			local async = vim.loop.new_async(vim.schedule_wrap(function ()
 				if lock then return end
+				-- TODO can we pass in controller without making it a permanent dangling ref?
+				local cnt = CODEMP.workspace:get_buffer(name)
+				if cnt == nil then return end
+
 				lock = true
 				while true do
-					local event = controller:try_recv():await()
+					local event = cnt:try_recv():await()
 					if event == nil then break end
 					ticks[buffer] = vim.api.nvim_buf_get_changedtick(buffer)
 					CODEMP.ignore_following_action = true
@@ -154,7 +159,7 @@ local function attach(name, opts)
 					if event.hash ~= nil and CODEMP.native.hash(utils.buffer.get_content(buffer)) ~= event.hash then
 						if CODEMP.config.auto_sync then
 							print(" /!\\ out of sync, resynching...")
-							utils.buffer.set_content(buffer, controller:content():await())
+							utils.buffer.set_content(buffer, cnt:content():await())
 						else
 							vim.ui.select(
 								{ "sync", "detach" },
@@ -162,7 +167,7 @@ local function attach(name, opts)
 								function (choice)
 									if not choice then return end
 									if choice == "sync" then
-										utils.buffer.set_content(buffer, controller:content():await())
+										utils.buffer.set_content(buffer, cnt:content():await())
 									end
 									if choice == "detach" then
 										detach(name)
@@ -174,7 +179,7 @@ local function attach(name, opts)
 						utils.buffer.set_content(buffer, event.change.content, event.change.start_idx, event.change.end_idx)
 					end
 
-					controller:ack(event.version)
+					cnt:ack(event.version)
 				end
 				lock = false
 			end))
@@ -237,7 +242,7 @@ local function create(buffer, ephemeral)
 	if CODEMP.workspace == nil then
 		error("join a workspace first")
 	end
-	CODEMP.workspace:create_buffer(buffer, ephemeral):and_then(function ()
+	CODEMP.workspace:create_buffer(buffer, { ephemeral = ephemeral }):and_then(function ()
 		print(" ++  created buffer " .. buffer)
 		require('codemp.window').update()
 	end)

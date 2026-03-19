@@ -159,7 +159,7 @@ M.add = function(state, path, extra)
 		if vim.startswith(selected.name, "#") then
 			vim.ui.input({ prompt = "new buffer path" }, function(input)
 				if input == nil or input == "" then return end
-				CODEMP.workspace:create_buffer(input, true):and_then(function ()
+				CODEMP.workspace:create_buffer(input):and_then(function ()
 					manager.refresh("codemp")
 				end)
 			end)
@@ -180,6 +180,23 @@ M.add = function(state, path, extra)
 			end)
 		end)
 	elseif selected.type == "buffer" then
+		if selected.extra.ephemeral then
+			CODEMP.workspace:pin_buffer(selected.name):and_then(function ()
+				print(" -- pinned buffer " .. selected.name)
+				manager.refresh("codemp")
+			end)
+		else
+			CODEMP.workspace:un_pin_buffer(selected.name):and_then(function ()
+				print(" -- un-pinned buffer " .. selected.name)
+				manager.refresh("codemp")
+			end)
+		end
+	end
+end
+
+M.focus_preview = function(state, path, extra)
+	local selected = state.tree:get_node()
+	if selected.type == "buffer" then
 		if buf_manager.map_rev[selected.name] ~= nil then
 			vim.ui.input({ prompt = "detach from '" .. selected.name .. "'?" }, function (choice)
 				if not choice or not vim.startswith(string.lower(choice), "y") then return end
